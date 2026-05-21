@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# playwright persistent user data (네이버 로그인 세션 저장소)
+/.playwright-user-data/
+
+# claude code runtime artifacts
+.claude/scheduled_tasks.lock
+
+# docs (PRD 등 로컬 기획 문서)
+/docs/
