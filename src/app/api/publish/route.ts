@@ -19,7 +19,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 async function saveTempImages(files: File[]): Promise<{ dir: string; paths: string[] }> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'tastywrite-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'auto-blog-'));
   const paths = await Promise.all(
     files.map(async (file, idx) => {
       const ext = path.extname(file.name) || '.jpg';

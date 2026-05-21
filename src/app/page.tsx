@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl px-6 py-10">
       <header className="mb-8">
-        <h1 className="text-2xl font-bold">🍴 TastyWrite</h1>
+        <h1 className="text-2xl font-bold">🍴 auto-blog</h1>
         <p className="mt-1 text-sm text-neutral-500">
           맛집 블로그 자동 발행 봇 — Phase 1 MVP (임시저장 전용)
         </p>

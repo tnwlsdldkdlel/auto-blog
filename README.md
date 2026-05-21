@@ -1,4 +1,4 @@
-# 🍴 TastyWrite
+# 🍴 auto-blog
 
 맛집 블로그 자동 발행 봇 (Phase 1 MVP).
 사진 + 키워드 → GPT-4o Vision으로 원고 생성 → Playwright로 네이버 블로그에 **임시저장**.
