@@ -9,6 +9,7 @@ import {
   dismissRecoveryPopup,
   fillTitleAndBody,
   attachImages,
+  attachPlace,
   saveAsDraft,
   resolveUserDataDir,
   resolveBlogId,
@@ -76,8 +77,22 @@ export async function POST(req: NextRequest) {
     // Day 5: 제목 + 본문 텍스트 입력
     await fillTitleAndBody(handle, payload);
 
-    // Day 6: 이미지 첨부 + 임시저장
+    // Day 6: 이미지 첨부
     await attachImages(handle, saved.paths);
+
+    // Phase 2: 장소(네이버 지도) 첨부 — name 또는 address 중 하나만 있어도 시도, 실패해도 발행은 계속
+    if (payload.place && (payload.place.name || payload.place.address)) {
+      try {
+        await attachPlace(handle, payload.place);
+      } catch (placeErr) {
+        const msg = placeErr instanceof Error ? placeErr.message : 'unknown';
+        handle.log('warn', `장소 첨부 중 예외 — 발행은 계속: ${msg}`);
+      }
+    } else {
+      handle.log('info', 'payload.place 없음 — 장소 첨부 skip');
+    }
+
+    // 임시저장
     await saveAsDraft(handle);
 
     // 사용자가 결과 화면 확인할 시간 (Phase 1: 즉시 종료하지 않음)

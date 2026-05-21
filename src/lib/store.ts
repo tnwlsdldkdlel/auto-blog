@@ -11,6 +11,8 @@ interface StoreState {
   images: UploadImage[];
   keyword: string;
   toneNote: string;
+  placeName: string;
+  placeAddress: string;
   status: BotStatus;
   logs: LogLine[];
   addImages: (files: File[]) => void;
@@ -18,6 +20,8 @@ interface StoreState {
   clearImages: () => void;
   setKeyword: (v: string) => void;
   setToneNote: (v: string) => void;
+  setPlaceName: (v: string) => void;
+  setPlaceAddress: (v: string) => void;
   setStatus: (s: BotStatus) => void;
   appendLog: (line: Omit<LogLine, 'ts'>) => void;
   resetLogs: () => void;
@@ -27,6 +31,8 @@ export const useBotStore = create<StoreState>((set) => ({
   images: [],
   keyword: '',
   toneNote: '',
+  placeName: '',
+  placeAddress: '',
   status: 'idle',
   logs: [],
   addImages: (files) =>
@@ -53,6 +59,8 @@ export const useBotStore = create<StoreState>((set) => ({
     }),
   setKeyword: (v) => set({ keyword: v }),
   setToneNote: (v) => set({ toneNote: v }),
+  setPlaceName: (v) => set({ placeName: v }),
+  setPlaceAddress: (v) => set({ placeAddress: v }),
   setStatus: (s) => set({ status: s }),
   appendLog: (line) =>
     set((state) => ({

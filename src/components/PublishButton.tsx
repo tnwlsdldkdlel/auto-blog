@@ -21,6 +21,8 @@ export function PublishButton() {
   const images = useBotStore((s) => s.images);
   const keyword = useBotStore((s) => s.keyword);
   const toneNote = useBotStore((s) => s.toneNote);
+  const placeName = useBotStore((s) => s.placeName);
+  const placeAddress = useBotStore((s) => s.placeAddress);
   const setStatus = useBotStore((s) => s.setStatus);
   const appendLog = useBotStore((s) => s.appendLog);
   const resetLogs = useBotStore((s) => s.resetLogs);
@@ -50,6 +52,22 @@ export function PublishButton() {
       appendLog({ level: 'info', message: `✓ 제목: ${p.title}` });
       appendLog({ level: 'info', message: `✓ 태그: ${p.tags.join(', ')}` });
       appendLog({ level: 'info', message: `✓ 섹션 ${p.sections.length}개 생성 완료` });
+
+      // 사용자가 식당명 또는 주소 중 하나만 입력해도 그 값을 BlogPayload.place로 강제 덮어쓰기
+      const userPlaceName = placeName.trim();
+      const userPlaceAddress = placeAddress.trim();
+      if (userPlaceName || userPlaceAddress) {
+        p.place = {
+          name: userPlaceName,
+          address: userPlaceAddress,
+          latitude: null,
+          longitude: null,
+        };
+        const display = [userPlaceName, userPlaceAddress].filter(Boolean).join(' / ');
+        appendLog({ level: 'info', message: `✓ 사용자 입력 장소로 덮어쓰기: ${display}` });
+      } else if (p.place) {
+        appendLog({ level: 'info', message: `✓ AI 추론 장소: ${p.place.name} / ${p.place.address}` });
+      }
 
       // Stage 2: /api/publish
       setStatus('automating');

@@ -5,8 +5,12 @@ import { useBotStore } from '@/lib/store';
 export function MetaForm() {
   const keyword = useBotStore((s) => s.keyword);
   const toneNote = useBotStore((s) => s.toneNote);
+  const placeName = useBotStore((s) => s.placeName);
+  const placeAddress = useBotStore((s) => s.placeAddress);
   const setKeyword = useBotStore((s) => s.setKeyword);
   const setToneNote = useBotStore((s) => s.setToneNote);
+  const setPlaceName = useBotStore((s) => s.setPlaceName);
+  const setPlaceAddress = useBotStore((s) => s.setPlaceAddress);
 
   return (
     <div className="space-y-3">
@@ -33,6 +37,28 @@ export function MetaForm() {
           rows={3}
           className="w-full rounded border border-neutral-300 bg-transparent px-3 py-2 text-sm dark:border-neutral-700"
         />
+      </div>
+      <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900/30">
+        <p className="mb-2 text-xs text-neutral-500">
+          📍 식당 위치 (선택) — 입력하면 네이버 지도가 본문에 자동 첨부됩니다.
+          비워두면 AI가 추측하며, 실패 시 지도 없이 발행됩니다.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="text"
+            value={placeName}
+            onChange={(e) => setPlaceName(e.target.value)}
+            placeholder="식당명 (예: OO국밥 강남점)"
+            className="w-full rounded border border-neutral-300 bg-transparent px-3 py-2 text-sm dark:border-neutral-700"
+          />
+          <input
+            type="text"
+            value={placeAddress}
+            onChange={(e) => setPlaceAddress(e.target.value)}
+            placeholder="주소 (예: 서울 강남구 역삼동)"
+            className="w-full rounded border border-neutral-300 bg-transparent px-3 py-2 text-sm dark:border-neutral-700"
+          />
+        </div>
       </div>
     </div>
   );

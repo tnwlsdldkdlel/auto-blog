@@ -216,6 +216,118 @@ export async function attachImages(handle: BotHandle, imagePaths: string[]): Pro
 }
 
 /**
+ * 본문 말미에 네이버 지도(장소) 컴포넌트를 첨부.
+ * Phase 2: 검색어로 자동 매칭. 셀렉터 미스 시 전체 발행은 막지 않고 skip.
+ */
+export async function attachPlace(
+  handle: BotHandle,
+  place: { name: string; address: string; latitude: number | null; longitude: number | null },
+): Promise<void> {
+  const { page, log } = handle;
+  const frame = page.frameLocator('iframe[name="mainFrame"]');
+
+  const query = `${place.name} ${place.address}`.trim();
+  if (!query) {
+    log('warn', 'place 입력값이 모두 비어 있음 — skip');
+    return;
+  }
+  log('info', `장소 첨부 시작: "${query}"`);
+
+  // 본문 끝 커서 이동 (codegen 일치)
+  try {
+    const bodyArea = frame.locator('div').filter({ hasText: /^본문 추가$/ }).first();
+    await bodyArea.click({ timeout: 1500 });
+  } catch {
+    try {
+      const bodyAreaFallback = frame.locator('.se-section-text .se-text-paragraph').last();
+      await bodyAreaFallback.click({ timeout: 1500 });
+    } catch {
+      // 본문 위치 못 잡아도 툴바 버튼은 시도
+    }
+  }
+  await page.keyboard.press('End').catch(() => {});
+
+  // 1) '장소 추가' 툴바 버튼 — codegen 확인
+  try {
+    const placeBtn = frame.getByRole('button', { name: '장소 추가' }).first();
+    await placeBtn.waitFor({ timeout: 3000 });
+    await placeBtn.click();
+    log('info', '✓ "장소 추가" 툴바 버튼 클릭');
+  } catch {
+    log('warn', '장소 버튼 미감지 — place 첨부 skip (전체 발행은 계속)');
+    return;
+  }
+
+  // 2) 검색창 — codegen 확인: textbox '장소명을 입력하세요'
+  const searchInput = frame.getByRole('textbox', { name: '장소명을 입력하세요' }).first();
+  try {
+    await searchInput.waitFor({ timeout: 3000 });
+    await searchInput.click();
+    await searchInput.fill(query);
+    log('info', `검색어 입력: "${query}"`);
+  } catch {
+    log('warn', '"장소명을 입력하세요" 검색창 미감지 — skip');
+    return;
+  }
+
+  // 자동완성 드롭다운 렌더 대기
+  await page.waitForTimeout(1200);
+
+  // 3) 자동완성 옵션 선택 (codegen: role=option) — 매칭 우선, 없으면 첫 번째
+  const optionCandidates: Locator[] = [
+    frame.getByRole('option').filter({ hasText: place.name || place.address }).first(),
+    frame.getByRole('option').first(),
+  ];
+  let optionClicked = false;
+  for (const loc of optionCandidates) {
+    try {
+      await loc.waitFor({ timeout: 1500 });
+      await loc.click();
+      optionClicked = true;
+      log('info', '✓ 자동완성 옵션 선택');
+      break;
+    } catch {
+      continue;
+    }
+  }
+
+  // 4) Enter로 검색 실행 (codegen: 옵션 클릭 후 검색창 다시 클릭 + Enter)
+  try {
+    await searchInput.click();
+    await page.keyboard.press('Enter');
+    if (!optionClicked) log('info', '자동완성 옵션 없음 → Enter로 직접 검색');
+  } catch {
+    // 무시
+  }
+
+  await page.waitForTimeout(2000);
+
+  // 5) '추가' 버튼 (검색 결과의 한 항목 추가) — codegen: '추가' exact
+  try {
+    const addBtn = frame.getByRole('button', { name: '추가', exact: true }).first();
+    await addBtn.waitFor({ timeout: 3000 });
+    await addBtn.click();
+    log('info', '✓ "추가" 버튼 클릭');
+  } catch {
+    log('warn', '"추가" 버튼 미감지 — 검색 결과 없을 가능성, skip');
+    return;
+  }
+
+  // 6) '확인' 버튼 (최종 삽입 확정) — codegen 확인
+  try {
+    const confirmBtn = frame.getByRole('button', { name: '확인' }).first();
+    await confirmBtn.waitFor({ timeout: 2000 });
+    await confirmBtn.click();
+    log('info', '✓ "확인" 버튼 클릭');
+  } catch {
+    // 확인 모달 없으면 통과
+  }
+
+  await page.waitForTimeout(1000);
+  log('info', '✓ 장소 첨부 완료');
+}
+
+/**
  * 임시저장 클릭.
  * codegen 확인: 저장 버튼은 iframe 내부의 getByRole('button', { name: '저장', exact: true }).
  */

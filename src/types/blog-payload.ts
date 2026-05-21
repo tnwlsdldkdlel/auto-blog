@@ -17,8 +17,8 @@ export const BlogPayloadSchema = z.object({
     .object({
       name: z.string(),
       address: z.string(),
-      latitude: z.number(),
-      longitude: z.number(),
+      latitude: z.number().nullable(),
+      longitude: z.number().nullable(),
     })
     .nullable(),
   sections: z.array(BlogSectionSchema).min(1),
