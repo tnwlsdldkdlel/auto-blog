@@ -7,12 +7,18 @@ interface UploadImage {
   previewUrl: string;
 }
 
+type PublicScope = 'all' | 'private';
+
 interface StoreState {
   images: UploadImage[];
   keyword: string;
   toneNote: string;
   placeName: string;
   placeAddress: string;
+  categoryName: string;
+  isPublic: PublicScope;
+  commentAllow: boolean;
+  sympathyAllow: boolean;
   status: BotStatus;
   logs: LogLine[];
   addImages: (files: File[]) => void;
@@ -22,6 +28,10 @@ interface StoreState {
   setToneNote: (v: string) => void;
   setPlaceName: (v: string) => void;
   setPlaceAddress: (v: string) => void;
+  setCategoryName: (v: string) => void;
+  setIsPublic: (v: PublicScope) => void;
+  setCommentAllow: (v: boolean) => void;
+  setSympathyAllow: (v: boolean) => void;
   setStatus: (s: BotStatus) => void;
   appendLog: (line: Omit<LogLine, 'ts'>) => void;
   resetLogs: () => void;
@@ -33,6 +43,10 @@ export const useBotStore = create<StoreState>((set) => ({
   toneNote: '',
   placeName: '',
   placeAddress: '',
+  categoryName: '',
+  isPublic: 'all',
+  commentAllow: true,
+  sympathyAllow: true,
   status: 'idle',
   logs: [],
   addImages: (files) =>
@@ -61,6 +75,10 @@ export const useBotStore = create<StoreState>((set) => ({
   setToneNote: (v) => set({ toneNote: v }),
   setPlaceName: (v) => set({ placeName: v }),
   setPlaceAddress: (v) => set({ placeAddress: v }),
+  setCategoryName: (v) => set({ categoryName: v }),
+  setIsPublic: (v) => set({ isPublic: v }),
+  setCommentAllow: (v) => set({ commentAllow: v }),
+  setSympathyAllow: (v) => set({ sympathyAllow: v }),
   setStatus: (s) => set({ status: s }),
   appendLog: (line) =>
     set((state) => ({

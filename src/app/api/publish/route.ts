@@ -10,6 +10,7 @@ import {
   fillTitleAndBody,
   attachImages,
   attachPlace,
+  setCategory,
   saveAsDraft,
   resolveUserDataDir,
   resolveBlogId,
@@ -90,6 +91,16 @@ export async function POST(req: NextRequest) {
       }
     } else {
       handle.log('info', 'payload.place 없음 — 장소 첨부 skip');
+    }
+
+    // 카테고리 지정 (있을 때만, 실패해도 발행은 계속)
+    if (payload.categoryCode && payload.categoryCode.trim()) {
+      try {
+        await setCategory(handle, payload.categoryCode);
+      } catch (catErr) {
+        const msg = catErr instanceof Error ? catErr.message : 'unknown';
+        handle.log('warn', `카테고리 지정 중 예외 — 발행은 계속: ${msg}`);
+      }
     }
 
     // 임시저장

@@ -328,6 +328,71 @@ export async function attachPlace(
 }
 
 /**
+ * 카테고리 지정. 사용자 입력 categoryName에 정확히 일치하는 트리/리스트 항목 클릭.
+ * 실패 시 throw 안 하고 skip — 매칭 실패해도 발행은 계속 진행.
+ */
+export async function setCategory(handle: BotHandle, categoryName: string): Promise<void> {
+  const trimmed = categoryName.trim();
+  if (!trimmed) return;
+  const { page, log } = handle;
+  const frame = page.frameLocator('iframe[name="mainFrame"]');
+
+  log('info', `카테고리 지정 시도: "${trimmed}"`);
+
+  // 1) 카테고리 드롭다운 / 영역 열기
+  const openerCandidates: Locator[] = [
+    frame.getByRole('button', { name: '카테고리', exact: true }).first(),
+    frame.getByRole('button', { name: /카테고리/ }).first(),
+    frame.locator('button:has-text("카테고리")').first(),
+  ];
+  let opened = false;
+  for (const loc of openerCandidates) {
+    try {
+      await loc.waitFor({ timeout: 2000 });
+      await loc.click();
+      opened = true;
+      log('info', '✓ 카테고리 드롭다운 열림');
+      break;
+    } catch {
+      continue;
+    }
+  }
+  if (!opened) {
+    log('warn', '카테고리 버튼 미감지 — skip');
+    return;
+  }
+
+  await page.waitForTimeout(700);
+
+  // 2) 카테고리명 매칭 클릭 (역할 후보 다단계)
+  const itemCandidates: Locator[] = [
+    frame.getByRole('treeitem', { name: trimmed }).first(),
+    frame.getByRole('option', { name: trimmed }).first(),
+    frame.getByRole('menuitem', { name: trimmed }).first(),
+    frame.locator(`li:has-text("${trimmed}")`).first(),
+    frame.locator(`text="${trimmed}"`).first(),
+  ];
+  let clicked = false;
+  for (const loc of itemCandidates) {
+    try {
+      await loc.waitFor({ timeout: 1500 });
+      await loc.click();
+      clicked = true;
+      log('info', `✓ 카테고리 "${trimmed}" 선택`);
+      break;
+    } catch {
+      continue;
+    }
+  }
+  if (!clicked) {
+    log('warn', `카테고리 "${trimmed}" 매칭 실패 — skip`);
+    return;
+  }
+
+  await page.waitForTimeout(500);
+}
+
+/**
  * 임시저장 클릭.
  * codegen 확인: 저장 버튼은 iframe 내부의 getByRole('button', { name: '저장', exact: true }).
  */

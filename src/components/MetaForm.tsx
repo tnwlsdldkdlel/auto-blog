@@ -7,10 +7,18 @@ export function MetaForm() {
   const toneNote = useBotStore((s) => s.toneNote);
   const placeName = useBotStore((s) => s.placeName);
   const placeAddress = useBotStore((s) => s.placeAddress);
+  const categoryName = useBotStore((s) => s.categoryName);
+  const isPublic = useBotStore((s) => s.isPublic);
+  const commentAllow = useBotStore((s) => s.commentAllow);
+  const sympathyAllow = useBotStore((s) => s.sympathyAllow);
   const setKeyword = useBotStore((s) => s.setKeyword);
   const setToneNote = useBotStore((s) => s.setToneNote);
   const setPlaceName = useBotStore((s) => s.setPlaceName);
   const setPlaceAddress = useBotStore((s) => s.setPlaceAddress);
+  const setCategoryName = useBotStore((s) => s.setCategoryName);
+  const setIsPublic = useBotStore((s) => s.setIsPublic);
+  const setCommentAllow = useBotStore((s) => s.setCommentAllow);
+  const setSympathyAllow = useBotStore((s) => s.setSympathyAllow);
 
   return (
     <div className="space-y-3">
@@ -58,6 +66,51 @@ export function MetaForm() {
             placeholder="주소 (예: 서울 강남구 역삼동)"
             className="w-full rounded border border-neutral-300 bg-transparent px-3 py-2 text-sm dark:border-neutral-700"
           />
+        </div>
+      </div>
+
+      <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900/30">
+        <p className="mb-2 text-xs text-neutral-500">
+          ⚙️ 발행 옵션 (선택) — 카테고리는 임시저장 단계에서 적용됩니다.
+          공개범위/댓글/공감은 즉시 발행 토글 활성화 시(다음 단계) 사용됩니다.
+        </p>
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={categoryName}
+            onChange={(e) => setCategoryName(e.target.value)}
+            placeholder="카테고리명 (예: 맛집, 일상) — 정확히 일치해야 매칭"
+            className="w-full rounded border border-neutral-300 bg-transparent px-3 py-2 text-sm dark:border-neutral-700"
+          />
+          <div className="flex items-center gap-3 text-sm">
+            <label className="flex items-center gap-1.5">
+              공개범위:
+              <select
+                value={isPublic}
+                onChange={(e) => setIsPublic(e.target.value as 'all' | 'private')}
+                className="rounded border border-neutral-300 bg-transparent px-2 py-1 text-sm dark:border-neutral-700"
+              >
+                <option value="all">전체공개</option>
+                <option value="private">비공개</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={commentAllow}
+                onChange={(e) => setCommentAllow(e.target.checked)}
+              />
+              댓글 허용
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={sympathyAllow}
+                onChange={(e) => setSympathyAllow(e.target.checked)}
+              />
+              공감 허용
+            </label>
+          </div>
         </div>
       </div>
     </div>

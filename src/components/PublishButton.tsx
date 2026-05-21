@@ -23,6 +23,10 @@ export function PublishButton() {
   const toneNote = useBotStore((s) => s.toneNote);
   const placeName = useBotStore((s) => s.placeName);
   const placeAddress = useBotStore((s) => s.placeAddress);
+  const categoryName = useBotStore((s) => s.categoryName);
+  const isPublic = useBotStore((s) => s.isPublic);
+  const commentAllow = useBotStore((s) => s.commentAllow);
+  const sympathyAllow = useBotStore((s) => s.sympathyAllow);
   const setStatus = useBotStore((s) => s.setStatus);
   const appendLog = useBotStore((s) => s.appendLog);
   const resetLogs = useBotStore((s) => s.resetLogs);
@@ -67,6 +71,14 @@ export function PublishButton() {
         appendLog({ level: 'info', message: `✓ 사용자 입력 장소로 덮어쓰기: ${display}` });
       } else if (p.place) {
         appendLog({ level: 'info', message: `✓ AI 추론 장소: ${p.place.name} / ${p.place.address}` });
+      }
+
+      // 사용자가 설정한 발행 옵션으로 항상 덮어쓰기
+      p.options = { commentAllow, sympathyAllow, isPublic };
+      const trimmedCategory = categoryName.trim();
+      if (trimmedCategory) {
+        p.categoryCode = trimmedCategory;
+        appendLog({ level: 'info', message: `✓ 카테고리 지정: "${trimmedCategory}"` });
       }
 
       // Stage 2: /api/publish
