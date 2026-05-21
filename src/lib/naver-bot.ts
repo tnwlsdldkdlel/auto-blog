@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { chromium, type BrowserContext, type Page } from 'playwright';
+import { chromium, type BrowserContext, type Page, type Locator } from 'playwright';
 import type { LogLine } from '@/types/automation';
 import type { BlogPayload, BlogSection } from '@/types/blog-payload';
 
@@ -64,10 +64,41 @@ export async function launchBlogBot(config: BotConfig): Promise<BotHandle> {
 
 /**
  * PRD §5.1 1단계: 스마트에디터 로딩 검증.
- * 10초 이내 contenteditable DOM이 떠야 한다.
+ * - 로그인 페이지 감지 시: 사용자가 직접 로그인할 수 있도록 별도 긴 대기 (기본 5분).
+ * - 글쓰기 페이지 도달 후: contenteditable DOM 감지를 timeoutMs(기본 10초) 내에 완료.
  */
-export async function waitForEditor(handle: BotHandle, timeoutMs = 10000): Promise<void> {
+export async function waitForEditor(
+  handle: BotHandle,
+  timeoutMs = 10000,
+  loginWaitMs = 300_000,
+): Promise<void> {
   const { page, log } = handle;
+
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
+  const url = page.url();
+  const isLoginPage =
+    url.includes('nid.naver.com') || url.includes('nidlogin.login');
+
+  if (isLoginPage) {
+    log(
+      'info',
+      `네이버 로그인 페이지 감지 — 띄워진 크롬 창에서 직접 로그인해 주세요 (최대 ${Math.round(loginWaitMs / 1000)}초 대기)`,
+    );
+    try {
+      await page.waitForURL(
+        (u) => {
+          const s = u.toString();
+          return !s.includes('nid.naver.com') && !s.includes('nidlogin.login');
+        },
+        { timeout: loginWaitMs },
+      );
+      log('info', '✓ 로그인 완료 — 글쓰기 페이지 로딩 대기');
+      await page.waitForLoadState('domcontentloaded').catch(() => {});
+    } catch {
+      throw new Error('LOGIN_TIMEOUT');
+    }
+  }
+
   log('info', `에디터 로딩 대기 (최대 ${timeoutMs}ms)...`);
   try {
     await page.locator('iframe[name="mainFrame"]').first().waitFor({ timeout: timeoutMs });
@@ -80,52 +111,60 @@ export async function waitForEditor(handle: BotHandle, timeoutMs = 10000): Promi
 }
 
 /**
- * "이전에 작성하던 글이 있습니다" 류 모달이 떠 있으면 "새로 작성"을 클릭해 닫는다.
- * 없으면 조용히 통과.
+ * "이전에 작성하던 글이 있습니다" 류 모달이 떠 있으면 "취소"를 클릭해 닫는다.
+ * codegen 확인: getByRole('button', { name: '취소', exact: true }) 내부 iframe.
  */
 export async function dismissRecoveryPopup(handle: BotHandle): Promise<void> {
   const { page, log } = handle;
   const frame = page.frameLocator('iframe[name="mainFrame"]');
-  const cancelBtn = frame.locator('button:has-text("취소")').first();
+  const cancelBtn = frame.getByRole('button', { name: '취소', exact: true }).first();
   try {
-    await cancelBtn.waitFor({ timeout: 2000 });
+    await cancelBtn.waitFor({ timeout: 2500 });
     await cancelBtn.click();
     log('info', '복구 팝업 닫음');
+    await page.waitForTimeout(500);
   } catch {
     // 팝업 없음 — 정상
   }
 }
 
 /**
- * Day 5: 제목 + 본문 텍스트 자동 입력.
- * Phase 1에서는 text section만 합쳐 입력하고, image는 Day 6에서 본문 말미에 일괄 첨부.
+ * 제목 + 본문 텍스트 자동 입력.
+ * codegen 결과로 placeholder("제목", "본문 추가") 매칭 + 클래스 fallback.
  */
 export async function fillTitleAndBody(handle: BotHandle, payload: BlogPayload): Promise<void> {
   const { page, log } = handle;
   const frame = page.frameLocator('iframe[name="mainFrame"]');
 
   log('info', `제목 입력: "${payload.title}"`);
-  const titleArea = frame
-    .locator('.se-section-documentTitle .se-text-paragraph')
-    .first();
-  await titleArea.click();
+  // codegen: getByRole('paragraph').filter({ hasText: '제목' })
+  // 클래스 fallback: .se-section-documentTitle 영역의 paragraph
+  const titleCandidates = [
+    frame.locator('.se-section-documentTitle .se-text-paragraph').first(),
+    frame.getByRole('paragraph').filter({ hasText: '제목' }).first(),
+  ];
+  await clickFirstAvailable(titleCandidates, 'title');
   await page.keyboard.insertText(payload.title);
 
   const textSections = payload.sections.filter(isText).map((s) => s.value);
   const bodyText = textSections.join('\n\n');
 
   log('info', `본문 입력: ${textSections.length}개 단락 (${bodyText.length}자)`);
-  const bodyArea = frame.locator('.se-section-text .se-text-paragraph').first();
-  await bodyArea.click();
+  // codegen: locator('div').filter({ hasText: /^본문 추가$/ })
+  const bodyCandidates = [
+    frame.locator('.se-section-text .se-text-paragraph').first(),
+    frame.locator('div').filter({ hasText: /^본문 추가$/ }).first(),
+  ];
+  await clickFirstAvailable(bodyCandidates, 'body');
   await page.keyboard.insertText(bodyText);
 
   log('info', '✓ 제목/본문 입력 완료');
 }
 
 /**
- * Day 6: 본문 말미에 이미지들을 일괄 첨부.
- * 사진 툴바 버튼 클릭 → filechooser로 로컬 파일 주입.
- * (sections 순서대로 본문 중간 배치는 Phase 2.)
+ * 본문 말미에 이미지들을 일괄 첨부.
+ * codegen 확인: getByRole('button', { name: '사진 추가' }) → filechooser
+ * 첨부 후 사이드 패널 "닫기" 모달이 뜨면 닫는다.
  */
 export async function attachImages(handle: BotHandle, imagePaths: string[]): Promise<void> {
   if (imagePaths.length === 0) return;
@@ -136,80 +175,92 @@ export async function attachImages(handle: BotHandle, imagePaths: string[]): Pro
 
   // 본문 끝으로 커서 이동
   const bodyArea = frame.locator('.se-section-text .se-text-paragraph').last();
-  await bodyArea.click();
-  await page.keyboard.press('End');
-
-  // 사진 버튼 셀렉터 후보들 (네이버는 종종 마이너 변경됨)
-  const photoBtnCandidates = [
-    'button.se-image-toolbar-button',
-    'button[aria-label*="사진"]',
-    '.se-toolbar-item-image button',
-    'button:has-text("사진")',
-  ];
-
-  let clicked = false;
-  for (const sel of photoBtnCandidates) {
-    const btn = frame.locator(sel).first();
-    try {
-      await btn.waitFor({ state: 'visible', timeout: 1500 });
-      const [chooser] = await Promise.all([
-        page.waitForEvent('filechooser', { timeout: 5000 }),
-        btn.click(),
-      ]);
-      await chooser.setFiles(imagePaths);
-      clicked = true;
-      log('info', `✓ 사진 버튼 매칭 셀렉터: ${sel}`);
-      break;
-    } catch {
-      continue;
-    }
+  try {
+    await bodyArea.click({ timeout: 2000 });
+    await page.keyboard.press('End');
+  } catch {
+    // 본문 영역 못 찾아도 사진 버튼은 별도로 시도
   }
 
-  if (!clicked) {
+  const photoBtn = frame.getByRole('button', { name: '사진 추가' }).first();
+
+  try {
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser', { timeout: 5000 }),
+      photoBtn.click(),
+    ]);
+    await chooser.setFiles(imagePaths);
+    log('info', '✓ 사진 추가 버튼 → filechooser로 주입');
+  } catch {
     // 폴백: hidden input[type=file]에 직접 주입
-    log('warn', '사진 버튼 미감지 → input[type=file] 직접 주입 시도');
-    const fileInput = frame.locator('input[type="file"][accept*="image"]').first();
+    log('warn', '사진 버튼 filechooser 실패 → input[type=file] 직접 주입 시도');
+    const fileInput = frame.locator('input[type="file"]').first();
     await fileInput.setInputFiles(imagePaths);
   }
 
-  // 이미지 업로드/렌더링 대기 (Phase 1: 고정 대기)
+  // 이미지 업로드/렌더링 대기
   await page.waitForTimeout(2500 + imagePaths.length * 800);
+
+  // 첨부 후 사이드 패널 "닫기" 모달 처리 (codegen 발견)
+  const closeBtn = frame.getByRole('button', { name: '닫기', exact: true }).first();
+  try {
+    await closeBtn.waitFor({ timeout: 2000 });
+    await closeBtn.click();
+    log('info', '사진 첨부 후 사이드 패널 닫음');
+    await page.waitForTimeout(500);
+  } catch {
+    // 패널 없으면 통과
+  }
+
   log('info', '✓ 이미지 첨부 단계 완료');
 }
 
 /**
- * Day 6: 임시저장 클릭.
- * 네이버 스마트에디터의 "저장" 버튼은 본문 외부(상단 영역)에 있어 page 직접 접근.
+ * 임시저장 클릭.
+ * codegen 확인: 저장 버튼은 iframe 내부의 getByRole('button', { name: '저장', exact: true }).
  */
 export async function saveAsDraft(handle: BotHandle): Promise<void> {
   const { page, log } = handle;
+  const frame = page.frameLocator('iframe[name="mainFrame"]');
 
-  const saveBtnCandidates = [
-    'button.save_btn__bzc5B',
-    'button:has-text("저장")',
-    'a:has-text("저장")',
-  ];
+  const saveBtn = frame.getByRole('button', { name: '저장', exact: true }).first();
+  try {
+    await saveBtn.waitFor({ timeout: 3000 });
+    await saveBtn.click();
+    log('info', '✓ 임시저장 버튼 클릭 (iframe 내부 role=button)');
+  } catch {
+    throw new Error('SAVE_BUTTON_NOT_FOUND');
+  }
 
-  for (const sel of saveBtnCandidates) {
-    const btn = page.locator(sel).first();
+  // 저장 확인 모달이 뜨면 확인
+  const confirmBtn = frame.getByRole('button', { name: '확인', exact: true }).first();
+  try {
+    await confirmBtn.waitFor({ timeout: 2000 });
+    await confirmBtn.click();
+    log('info', '저장 확인 모달 확인');
+  } catch {
+    // 모달 없으면 통과
+  }
+
+  await page.waitForTimeout(2000);
+}
+
+/**
+ * 후보 locator 중 먼저 visible해지는 것을 클릭. 모두 실패 시 throw.
+ */
+async function clickFirstAvailable(
+  candidates: Locator[],
+  label: string,
+  timeoutPerCandidate = 2000,
+): Promise<void> {
+  for (const loc of candidates) {
     try {
-      await btn.waitFor({ state: 'visible', timeout: 1500 });
-      await btn.click();
-      log('info', `✓ 임시저장 버튼 클릭: ${sel}`);
-      // 저장 확인 모달이 뜰 수도 있음
-      const confirmBtn = page.locator('button:has-text("확인")').first();
-      try {
-        await confirmBtn.waitFor({ state: 'visible', timeout: 2000 });
-        await confirmBtn.click();
-        log('info', '저장 확인 모달 확인');
-      } catch {
-        // 모달 없으면 그냥 통과
-      }
-      await page.waitForTimeout(2000);
+      await loc.waitFor({ timeout: timeoutPerCandidate });
+      await loc.click();
       return;
     } catch {
       continue;
     }
   }
-  throw new Error('SAVE_BUTTON_NOT_FOUND');
+  throw new Error(`SELECTOR_NOT_FOUND: ${label}`);
 }

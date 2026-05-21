@@ -13,10 +13,13 @@ export const SYSTEM_PROMPT = `당신은 네이버 맛집 블로그 포스팅 생
 - 반드시 BlogPayload JSON 스키마로 응답.
 - sections 배열은 text와 image를 교차 배치한다.
 - image.index는 사용자가 업로드한 순서(0부터 시작)에 해당한다.
+- image.caption은 사진에 대한 짧은 설명. 굳이 필요 없으면 null.
 - 모든 이미지를 최소 1회 이상 sections에 배치한다.
 - title은 검색 친화적인 키워드 포함 30자 내외.
 - tags는 3~7개, 메인 키워드 변형 위주.
-- categoryCode는 빈 문자열로 두고, options는 기본값 사용한다.
+- categoryCode는 빈 문자열로 둔다.
+- place는 사진/이미지에서 식당 위치 정보를 확실히 알 수 없으면 null로 응답한다.
+- options는 { commentAllow: true, sympathyAllow: true, isPublic: 'all' } 로 응답한다.
 `;
 
 export function buildUserMessage(keyword: string, toneNote: string, imageCount: number) {

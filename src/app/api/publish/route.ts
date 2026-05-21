@@ -16,7 +16,9 @@ import {
 import type { PublishApiResponse } from '@/types/automation';
 
 export const runtime = 'nodejs';
-export const maxDuration = 300;
+// 로그인 대기(최대 5분) + 자동화(1~2분) 여유를 위해 600초로 확장.
+// (dev 환경에선 무시되지만 명시 의도 보존.)
+export const maxDuration = 600;
 
 async function saveTempImages(files: File[]): Promise<{ dir: string; paths: string[] }> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'auto-blog-'));

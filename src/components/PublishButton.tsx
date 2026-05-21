@@ -51,9 +51,13 @@ export function PublishButton() {
       appendLog({ level: 'info', message: `✓ 태그: ${p.tags.join(', ')}` });
       appendLog({ level: 'info', message: `✓ 섹션 ${p.sections.length}개 생성 완료` });
 
-      // Stage 2: /api/publish (Day 4: 페이지 진입 + 에디터 감지)
+      // Stage 2: /api/publish
       setStatus('automating');
       appendLog({ level: 'info', message: '네이버 블로그 자동화 시작...' });
+      appendLog({
+        level: 'info',
+        message: '※ 로그인 안 된 경우 새로 뜬 크롬 창에서 직접 로그인해 주세요 (최대 5분 대기).',
+      });
 
       const pubForm = new FormData();
       pubForm.append('payload', JSON.stringify(p));
