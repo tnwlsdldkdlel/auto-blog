@@ -10,8 +10,8 @@ import {
   fillTitleAndBody,
   attachImages,
   attachPlace,
+  openPublishModal,
   setCategory,
-  saveAsDraft,
   resolveUserDataDir,
   resolveBlogId,
 } from '@/lib/naver-bot';
@@ -93,28 +93,31 @@ export async function POST(req: NextRequest) {
       handle.log('info', 'payload.place 없음 — 장소 첨부 skip');
     }
 
-    // 카테고리 지정 (있을 때만, 실패해도 발행은 계속)
-    if (payload.categoryCode && payload.categoryCode.trim()) {
-      try {
+    // 반자동: 발행 모달 열기 → 카테고리 자동 선택까지만.
+    // 카테고리는 발행 모달 안에만 존재하므로 모달을 먼저 연다.
+    // 이 단계가 실패해도 작성된 글을 보존하기 위해 브라우저는 절대 닫지 않는다.
+    try {
+      await openPublishModal(handle);
+      if (payload.categoryCode && payload.categoryCode.trim()) {
         await setCategory(handle, payload.categoryCode);
-      } catch (catErr) {
-        const msg = catErr instanceof Error ? catErr.message : 'unknown';
-        handle.log('warn', `카테고리 지정 중 예외 — 발행은 계속: ${msg}`);
       }
+    } catch (modalErr) {
+      const msg = modalErr instanceof Error ? modalErr.message : 'unknown';
+      handle.log('warn', `발행 모달/카테고리 단계 예외 — 브라우저는 열어둡니다(직접 진행): ${msg}`);
     }
 
-    // 임시저장
-    await saveAsDraft(handle);
+    handle.log(
+      'info',
+      '✓ 반자동 준비 완료 — 크롬 창에서 카테고리·공개범위·내용을 확인한 뒤 [발행] 버튼을 직접 눌러 발행하세요. 끝나면 창을 닫으면 됩니다.',
+    );
 
-    // 사용자가 결과 화면 확인할 시간 (Phase 1: 즉시 종료하지 않음)
-    await handle.page.waitForTimeout(3000);
-
-    await context.close();
+    // 브라우저를 닫지 않고 열어둔 채 응답 반환 (최종 발행은 사람이 수행).
+    // context.close()를 호출하지 않고 참조만 비워, catch 블록이 닫지 않도록 한다.
     context = null;
 
     return NextResponse.json<PublishApiResponse & { payloadTitle?: string }>({
       ok: true,
-      message: 'SAVED_AS_DRAFT',
+      message: 'WAITING_FOR_MANUAL_PUBLISH',
       payloadTitle: payload.title,
       logs: handle.logs,
     });

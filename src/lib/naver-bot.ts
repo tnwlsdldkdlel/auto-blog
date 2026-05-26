@@ -328,8 +328,27 @@ export async function attachPlace(
 }
 
 /**
- * 카테고리 지정. 사용자 입력 categoryName에 정확히 일치하는 트리/리스트 항목 클릭.
- * 실패 시 throw 안 하고 skip — 매칭 실패해도 발행은 계속 진행.
+ * 발행 설정 모달을 연다.
+ * 카테고리/공개범위/댓글·공감 옵션은 모두 이 모달 안에 있다(글쓰기 화면엔 없음).
+ * codegen 실측(2026-05): iframe 내부 getByRole('button', { name: '발행' }).
+ */
+export async function openPublishModal(handle: BotHandle): Promise<void> {
+  const { page, log } = handle;
+  const frame = page.frameLocator('iframe[name="mainFrame"]');
+
+  const publishBtn = frame.getByRole('button', { name: '발행' }).first();
+  await publishBtn.waitFor({ timeout: 5000 });
+  await publishBtn.click();
+  log('info', '✓ 발행 설정 모달 열기');
+  await page.waitForTimeout(800);
+}
+
+/**
+ * 카테고리 지정. **발행 모달이 열려 있어야 한다**(openPublishModal 선행 필수).
+ * codegen 실측(2026-05):
+ *   드롭다운: getByRole('button', { name: '카테고리 목록 버튼' })
+ *   항목    : getByRole('button', { name: <카테고리명> })  (substring 매칭)
+ * 실패 시 throw 안 하고 skip — 매칭 실패해도 기본 카테고리로 발행 계속.
  */
 export async function setCategory(handle: BotHandle, categoryName: string): Promise<void> {
   const trimmed = categoryName.trim();
@@ -339,57 +358,31 @@ export async function setCategory(handle: BotHandle, categoryName: string): Prom
 
   log('info', `카테고리 지정 시도: "${trimmed}"`);
 
-  // 1) 카테고리 드롭다운 / 영역 열기
-  const openerCandidates: Locator[] = [
-    frame.getByRole('button', { name: '카테고리', exact: true }).first(),
-    frame.getByRole('button', { name: /카테고리/ }).first(),
-    frame.locator('button:has-text("카테고리")').first(),
-  ];
-  let opened = false;
-  for (const loc of openerCandidates) {
-    try {
-      await loc.waitFor({ timeout: 2000 });
-      await loc.click();
-      opened = true;
-      log('info', '✓ 카테고리 드롭다운 열림');
-      break;
-    } catch {
-      continue;
-    }
-  }
-  if (!opened) {
-    log('warn', '카테고리 버튼 미감지 — skip');
-    return;
-  }
-
-  await page.waitForTimeout(700);
-
-  // 2) 카테고리명 매칭 클릭 (역할 후보 다단계)
-  const itemCandidates: Locator[] = [
-    frame.getByRole('treeitem', { name: trimmed }).first(),
-    frame.getByRole('option', { name: trimmed }).first(),
-    frame.getByRole('menuitem', { name: trimmed }).first(),
-    frame.locator(`li:has-text("${trimmed}")`).first(),
-    frame.locator(`text="${trimmed}"`).first(),
-  ];
-  let clicked = false;
-  for (const loc of itemCandidates) {
-    try {
-      await loc.waitFor({ timeout: 1500 });
-      await loc.click();
-      clicked = true;
-      log('info', `✓ 카테고리 "${trimmed}" 선택`);
-      break;
-    } catch {
-      continue;
-    }
-  }
-  if (!clicked) {
-    log('warn', `카테고리 "${trimmed}" 매칭 실패 — skip`);
+  // 1) 카테고리 드롭다운 열기 — codegen: '카테고리 목록 버튼'
+  const opener = frame.getByRole('button', { name: '카테고리 목록 버튼' }).first();
+  try {
+    await opener.waitFor({ timeout: 3000 });
+    await opener.click();
+    log('info', '✓ 카테고리 목록 열림');
+  } catch {
+    log('warn', '카테고리 목록 버튼 미감지 — skip (발행 모달이 열렸는지 확인)');
     return;
   }
 
   await page.waitForTimeout(500);
+
+  // 2) 카테고리 항목 클릭 — codegen: 항목이 button(name=카테고리명)
+  const item = frame.getByRole('button', { name: trimmed }).first();
+  try {
+    await item.waitFor({ timeout: 2000 });
+    await item.click();
+    log('info', `✓ 카테고리 "${trimmed}" 선택`);
+  } catch {
+    log('warn', `카테고리 "${trimmed}" 매칭 실패 — skip`);
+    return;
+  }
+
+  await page.waitForTimeout(400);
 }
 
 /**

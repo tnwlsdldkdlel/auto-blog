@@ -1,13 +1,13 @@
 # 🤝 Handoff — auto-blog 작업 인수인계
 
-> 작성 시점: 2026-05-21 / 작성자: 사용자(mplanit) + Claude Code 세션 기준
+> 작성 시점: 2026-05-21 / 최종 갱신: 2026-05-26 / 작성자: 사용자(mplanit) + Claude Code 세션 기준
 > 이 문서는 다음 작업 세션에서 빠르게 컨텍스트를 잡기 위한 짧은 메모입니다.
 
 ---
 
 ## 한 줄 요약
 
-**Phase 1 MVP 완료(임시저장 1편 검증) → Phase 2 진행 중 — 네이버 지도 place 첨부 완료, 카테고리/발행옵션 UI는 추가됐고 setCategory 자동화는 E2E 검증 대기.**
+**Phase 1 MVP 완료 → Phase 2 진행 중 — 네이버 지도 place 첨부 + 카테고리 자동화(라이브 검증 완료). 발행 플로우는 "임시저장"에서 "반자동(발행 모달 열기 + 카테고리 선택까지, 최종 발행은 사람이 직접 클릭)"으로 전환. 다음은 공개범위/댓글·공감 옵션 자동화.**
 
 ---
 
@@ -23,8 +23,10 @@
 | 제목/본문 자동 입력 + 복구 팝업 회피 | ✅ |
 | 이미지 일괄 첨부(filechooser) + 첨부 후 사이드 패널 닫기 | ✅ |
 | **네이버 지도 place 첨부** (장소 추가 → 검색 → 자동완성 → 추가 → 확인 6단계) | ✅ codegen 검증 완료 |
-| 임시저장 클릭 → 임시저장함 도달 | ✅ |
+| **발행 모달 열기 + 카테고리 자동 선택** (발행 → 카테고리 목록 버튼 → 항목) | ✅ 라이브 검증 완료 (2026-05-26) |
+| 임시저장 클릭 (`saveAsDraft`, 함수는 남아있으나 현재 플로우 미사용) | ✅ (현재 반자동으로 대체) |
 | §5.1 1단계 실패 처리(에디터 10초 미감지) | ✅ |
+| §5.2 글 보존 — 발행 모달/카테고리 실패해도 브라우저 안 닫고 글 유지 | ✅ (route catch 보강) |
 
 ---
 
@@ -32,11 +34,11 @@
 
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| **카테고리 자동화 E2E 검증** | ⏳ 코드만 있고 셀렉터 미검증 | Task #15. codegen 필요할 가능성 큼 |
-| **공개범위/댓글/공감 자동화** | ⏳ UI/상태만 준비됨, Playwright 자동화 X | 즉시 발행 토글 작업과 같이 가야 의미 있음 |
-| **즉시 발행 토글** | ❌ | Phase 2 다음 큰 항목 |
+| ~~카테고리 자동화 E2E 검증~~ | ✅ 완료 (2026-05-26) | Task #15. 발행 모달 안에 있음 확인 + 라이브 검증 통과 |
+| **공개범위/댓글/공감 자동화** | ⏳ UI/상태만 준비됨, Playwright 자동화 X | 같은 발행 모달 안에 있음. 모달 여는 코드(`openPublishModal`) 이미 있으니 셀렉터만 codegen 하면 됨. **다음 1순위** |
+| **즉시 발행 토글(완전 자동 발행)** | ❌ | 현재는 반자동(사람이 최종 발행). 완전 자동 원하면 최종 [발행] 버튼 셀렉터 codegen 필요 |
+| **세션 영구 저장 안 됨** | ⏳ 버그성 | 실행마다 네이버 로그인 페이지 재등장(3회 연속 확인). "로그인 상태 유지" 체크 또는 storageState 방식 검토 필요. 발행 UX에 직접 영향 |
 | **SSE 실시간 로그** | ❌ | 현재 fetch 종료 시 한꺼번에 로그 받음. 5분 로그인 대기 중 UX 답답함 해결용 |
-| **§5.2 2단계 실패 처리** | ❌ | 작성 중 셀렉터 미스 시 임시저장 강제 클릭으로 글 보존 |
 | **경쟁사 크롤링 4-Stage (Phase 3)** | ❌ | PRD §3.4 SEO Fact Extraction. RefinedStoreInfo + Fact Extractor + 본문 큐레이션 |
 
 ---
@@ -51,10 +53,15 @@ cd C:\Users\mplanit\Documents\project\nn
 npm run dev
 
 # 실제 발행 시도
-# → http://localhost:3000 접속 후 사진+키워드+(선택)식당명/주소 입력 후 발행
+# → http://localhost:3000 접속 후 사진+키워드+(선택)식당명/주소 입력 후 발행창 열기
+#   → 뜬 크롬 창에서 카테고리·내용 확인 후 [발행] 직접 클릭
+
+# 셀렉터만 빠르게 검증/재캡처할 때 (dev 서버 없이)
+node scripts/inspect-category.mjs       # Inspector 레코더로 셀렉터 캡처
+node scripts/verify-category.mjs "놀고"  # openPublishModal+setCategory 라이브 검증
 ```
 
-`.env.local`에 `OPENAI_API_KEY` + `NAVER_BLOG_ID` 채워 있어야 함. `.playwright-user-data/`에 로그인 세션 캐시되어 있어 두 번째 실행부터 로그인 생략.
+`.env`(주의: `.env.local` 아님)에 `OPENAI_API_KEY` + `NAVER_BLOG_ID` + `PLAYWRIGHT_USER_DATA_DIR` 채워 있어야 함. `.playwright-user-data/`에 세션 캐시되지만 **현재 영구 저장이 안 돼 실행마다 재로그인 필요**(위 미완 표 참고).
 
 ---
 
@@ -72,7 +79,10 @@ npm run dev
 | 자동완성 옵션 | `getByRole('option')` 첫 번째 또는 hasText 매칭 |
 | 추가/확인 | `getByRole('button', { name: '추가', exact: true })` / `'확인'` |
 | 저장(임시저장) | iframe 내부 `getByRole('button', { name: '저장', exact: true })` |
-| 카테고리 (미검증) | `getByRole('button', { name: '카테고리' })` 추측 — codegen 필요 |
+| **발행 모달 열기** | iframe 내부 `getByRole('button', { name: '발행' })` ✅ |
+| **카테고리 드롭다운** | iframe 내부 `getByRole('button', { name: '카테고리 목록 버튼' })` ✅ (실측. 기존 `'카테고리'` 추측은 오답이었음) |
+| **카테고리 항목** | iframe 내부 `getByRole('button', { name: '<카테고리명>' })` ✅ (substring 매칭) |
+| 최종 발행 버튼 (미검증) | 발행 모달 안 별도 `'발행'` 버튼 추정 — 완전 자동화 시 codegen 필요 |
 
 > ⚠️ 네이버는 종종 마이너 UI 변경. 깨지면 `npx playwright codegen --viewport-size=1280,900 "https://blog.naver.com/<ID>?Redirect=Write"` 로 재캡처.
 
@@ -103,6 +113,8 @@ npm run dev
 ## 📋 git 히스토리 (이 세션)
 
 ```
+feat: Phase 2 - 카테고리 자동화 실측 검증 + 반자동 발행 모달 전환
+docs: 2026-05-21 일일 핸드오프 추가
 feat: Phase 2 - 카테고리/공개범위/댓글공감 옵션 UI + setCategory 자동화 1차
 feat: Phase 2 - 네이버 지도 place 첨부 자동화
 fix: Phase 1 실측 보정 - OpenAI 스키마 호환과 셀렉터 강화
@@ -118,10 +130,11 @@ Initial commit from Create Next App
 
 우선순위 순:
 
-1. **카테고리 자동화 codegen 검증 + 셀렉터 보정** (Task #15) — 가장 가까운 미완
-2. **즉시 발행 토글** — UI는 이미 옵션 박스 있으니 토글만 추가 + 발행 모달 자동화
-3. **SSE 실시간 로그** — 5분 로그인 대기 UX 답답함 해결
-4. **Phase 3 — 경쟁사 크롤링 4-Stage** (PRD §3.4) — 진짜 SEO 엔진화
+1. **실제 앱 전체 플로우 1회 검증** — 사진+키워드 입력 → 발행창까지. 셀렉터 단위는 검증했으나 generate→publish 통합은 미실행 (OpenAI 비용 발생)
+2. **공개범위/댓글·공감 옵션 자동화** — 같은 발행 모달 안. `openPublishModal()` 이미 있으니 옵션 셀렉터만 codegen 하면 됨
+3. **세션 영구 저장 문제 해결** — 매 실행 재로그인 제거 (발행 UX 핵심)
+4. **SSE 실시간 로그** — 5분 로그인 대기 UX 답답함 해결
+5. **Phase 3 — 경쟁사 크롤링 4-Stage** (PRD §3.4) — 진짜 SEO 엔진화
 
 ---
 

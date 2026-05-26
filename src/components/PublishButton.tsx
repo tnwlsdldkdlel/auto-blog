@@ -114,7 +114,8 @@ export function PublishButton() {
 
       appendLog({
         level: 'info',
-        message: '✓ 임시저장 완료 — 네이버 블로그 임시저장함에서 확인하세요.',
+        message:
+          '✓ 발행 준비 완료 — 뜬 크롬 창에서 카테고리·공개범위·내용을 확인한 뒤 [발행] 버튼을 직접 눌러주세요. (끝나면 창을 닫으면 됩니다)',
       });
       setStatus('idle');
     } catch (err) {
@@ -135,7 +136,7 @@ export function PublishButton() {
         ? 'AI 원고 생성 중...'
         : status === 'automating'
           ? '네이버 자동화 중...'
-          : '임시저장으로 발행'}
+          : 'AI 원고 생성 + 발행창 열기'}
     </button>
   );
 }
