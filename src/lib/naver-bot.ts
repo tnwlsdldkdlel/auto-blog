@@ -63,6 +63,29 @@ export async function launchBlogBot(config: BotConfig): Promise<BotHandle> {
 }
 
 /**
+ * 네이버 로그인 페이지에서 "로그인 상태 유지"를 켠다(사용자 로그인 전).
+ * 실측(2026-05): 최상위 페이지(nid.naver.com)의 `#keep`(div[role=checkbox][aria-checked]).
+ * 기본 OFF라 이게 꺼진 채 로그인하면 세션 쿠키만 발급돼 매 실행 재로그인이 발생한다.
+ * 켜두면 영구 쿠키가 발급돼 persistent 프로필에 로그인이 유지된다.
+ * best-effort — 컨트롤을 못 찾아도 로그인 진행은 막지 않는다.
+ */
+async function enableKeepLogin(page: Page, log: BotHandle['log']): Promise<void> {
+  try {
+    const keep = page.locator('#keep[role="checkbox"]').first();
+    await keep.waitFor({ timeout: 3000 });
+    const checked = await keep.getAttribute('aria-checked');
+    if (checked === 'true') {
+      log('info', '"로그인 상태 유지" 이미 ON');
+      return;
+    }
+    await keep.click();
+    log('info', '✓ "로그인 상태 유지" 자동 ON — 세션 영구 저장(다음 실행부터 재로그인 생략)');
+  } catch {
+    log('warn', '"로그인 상태 유지" 컨트롤 미감지 — 직접 켜주세요(안 켜면 매번 재로그인)');
+  }
+}
+
+/**
  * PRD §5.1 1단계: 스마트에디터 로딩 검증.
  * - 로그인 페이지 감지 시: 사용자가 직접 로그인할 수 있도록 별도 긴 대기 (기본 5분).
  * - 글쓰기 페이지 도달 후: contenteditable DOM 감지를 timeoutMs(기본 10초) 내에 완료.
@@ -74,7 +97,7 @@ export async function waitForEditor(
 ): Promise<void> {
   const { page, log } = handle;
 
-  await page.waitForLoadState('domcontentloaded').catch(() => {});
+  await page.waitForLoadState('domcontentloaded').catch(() => { });
   const url = page.url();
   const isLoginPage =
     url.includes('nid.naver.com') || url.includes('nidlogin.login');
@@ -84,6 +107,7 @@ export async function waitForEditor(
       'info',
       `네이버 로그인 페이지 감지 — 띄워진 크롬 창에서 직접 로그인해 주세요 (최대 ${Math.round(loginWaitMs / 1000)}초 대기)`,
     );
+    await enableKeepLogin(page, log);
     try {
       await page.waitForURL(
         (u) => {
@@ -93,7 +117,7 @@ export async function waitForEditor(
         { timeout: loginWaitMs },
       );
       log('info', '✓ 로그인 완료 — 글쓰기 페이지 로딩 대기');
-      await page.waitForLoadState('domcontentloaded').catch(() => {});
+      await page.waitForLoadState('domcontentloaded').catch(() => { });
     } catch {
       throw new Error('LOGIN_TIMEOUT');
     }
@@ -245,7 +269,7 @@ export async function attachPlace(
       // 본문 위치 못 잡아도 툴바 버튼은 시도
     }
   }
-  await page.keyboard.press('End').catch(() => {});
+  await page.keyboard.press('End').catch(() => { });
 
   // 1) '장소 추가' 툴바 버튼 — codegen 확인
   try {

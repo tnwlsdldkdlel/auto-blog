@@ -7,7 +7,7 @@
 
 ## 한 줄 요약
 
-**Phase 1 MVP 완료 → Phase 2 거의 완료 — 발행 모달 반자동(카테고리 + 공개범위/댓글/공감 옵션까지 자동 적용, 최종 [발행]은 사람이 직접 클릭). 실제 앱 전체 플로우 1회 발행 검증 완료(2026-05-27). 남은 건 세션 영구저장 버그, 장소 첨부 실제 식당명 확인, SSE 로그, Phase 3.**
+**Phase 1 MVP 완료 → Phase 2 거의 완료 — 발행 모달 반자동(카테고리 + 공개범위/댓글/공감 옵션까지 자동 적용, 최종 [발행]은 사람이 직접 클릭). 실제 앱 전체 플로우 1회 발행 검증 완료 + 세션 영구저장 버그 해결("로그인 상태 유지" 자동 ON, 재로그인 불필요)(2026-05-27). 남은 건 장소 첨부 실제 식당명 확인, SSE 로그, Phase 3.**
 
 ---
 
@@ -19,6 +19,7 @@
 | 이미지 멀티 업로드 + 키워드/톤노트/식당명/주소/옵션 입력 UI | ✅ |
 | GPT-4o Vision → BlogPayload JSON Structured Outputs | ✅ (zod `nullable` + `union` 필수) |
 | Playwright Persistent Context 세션 재활용 | ✅ (`.playwright-user-data/`) |
+| **세션 영구 저장** — 로그인 페이지에서 `#keep`("로그인 상태 유지") 자동 ON | ✅ 1차 로그인→2차 재실행 로그인 생략 검증 (2026-05-27) |
 | 로그인 페이지 감지 시 최대 5분 사용자 로그인 대기 | ✅ |
 | 제목/본문 자동 입력 + 복구 팝업 회피 | ✅ |
 | 이미지 일괄 첨부(filechooser) + 첨부 후 사이드 패널 닫기 | ✅ |
@@ -38,8 +39,8 @@
 |---|---|---|
 | ~~카테고리 자동화 E2E 검증~~ | ✅ 완료 (2026-05-26) | Task #15. 발행 모달 안에 있음 확인 + 라이브 검증 통과 |
 | ~~공개범위/댓글/공감 자동화~~ | ✅ 완료 (2026-05-27) | `setPublishOptions` 추가. 토글은 `for`→input `.checked` 읽어 mismatch만 클릭 |
-| **세션 영구 저장 안 됨** | ⏳ 버그성 (최우선 후보) | 실행마다 네이버 로그인 페이지 재등장(매번 확인됨). "로그인 상태 유지" 체크 또는 storageState 방식 검토 필요. 발행 UX에 직접 영향 |
-| **장소 첨부 — 실제 식당명 확인** | ⏳ | `자곡동`(동 단위)로는 `추가` 버튼 미감지 skip. 실제 업소명+주소로 한 번 검증 필요. 코드 버그인지 입력 문제인지 미확정 |
+| ~~세션 영구 저장 안 됨~~ | ✅ 완료 (2026-05-27) | `enableKeepLogin()` — 로그인 전 `#keep` 자동 ON. 영구 쿠키 발급돼 재로그인 불필요 |
+| **장소 첨부 — 실제 식당명 확인** | ⏳ (다음 후보) | `자곡동`(동 단위)로는 `추가` 버튼 미감지 skip. 실제 업소명+주소로 한 번 검증 필요. 코드 버그인지 입력 문제인지 미확정 |
 | **즉시 발행 토글(완전 자동 발행)** | ❌ | 현재는 반자동(사람이 최종 발행). 완전 자동 원하면 발행 모달 안 최종 [발행] 버튼 셀렉터 codegen 필요 |
 | **SSE 실시간 로그** | ❌ | 현재 fetch 종료 시 한꺼번에 로그 받음. 로그인 대기 중 UX 답답함 해결용 |
 | **경쟁사 크롤링 4-Stage (Phase 3)** | ❌ | PRD §3.4 SEO Fact Extraction. RefinedStoreInfo + Fact Extractor + 본문 큐레이션 |
@@ -64,9 +65,11 @@ node scripts/inspect-category.mjs       # 카테고리 셀렉터 캡처(Inspecto
 node scripts/verify-category.mjs "놀고"  # openPublishModal+setCategory 라이브 검증
 node scripts/inspect-options.mjs        # 발행옵션 셀렉터 캡처(모달 자동 열림)
 node scripts/verify-options.mjs         # setPublishOptions 라이브 검증 + 토글 DOM 진단
+node scripts/inspect-login.mjs          # 로그인 페이지 keep 컨트롤 진단(probe)
+node scripts/verify-session.mjs         # 세션 영구저장 검증(1차 로그인→2차 재실행 판정)
 ```
 
-`.env`(주의: `.env.local` 아님)에 `OPENAI_API_KEY` + `NAVER_BLOG_ID` + `PLAYWRIGHT_USER_DATA_DIR` 채워 있어야 함. `.playwright-user-data/`에 세션 캐시되지만 **현재 영구 저장이 안 돼 실행마다 재로그인 필요**(위 미완 표 참고).
+`.env`(주의: `.env.local` 아님)에 `OPENAI_API_KEY` + `NAVER_BLOG_ID` + `PLAYWRIGHT_USER_DATA_DIR` 채워 있어야 함. `.playwright-user-data/`에 세션 캐시됨 — **"로그인 상태 유지" 자동 ON 처리로 첫 로그인 후 영구 유지**(재로그인 불필요).
 
 ---
 
@@ -90,6 +93,7 @@ node scripts/verify-options.mjs         # setPublishOptions 라이브 검증 + �
 | **공개범위(라디오)** | iframe 내부 `getByText('전체공개')` / `getByText('비공개')` ✅ (label for=`open_public`/`open_private`) |
 | **댓글허용/공감허용(토글)** | iframe 내부 `getByText('댓글허용')` / `getByText('공감허용')` ✅ (label for=`publish-option-comment`/`publish-option-sympathy`. 상태는 for→input `.checked`로 읽음) |
 | 최종 발행 버튼 (미검증) | 발행 모달 안 별도 `'발행'` 버튼 추정 — 완전 자동화 시 codegen 필요 |
+| **로그인 상태 유지** (로그인 페이지, 최상위) | `#keep[role="checkbox"]` (div, `aria-checked`). 기본 OFF → 로그인 전 자동 클릭 ✅ |
 
 > ⚠️ 네이버는 종종 마이너 UI 변경. 깨지면 `npx playwright codegen --viewport-size=1280,900 "https://blog.naver.com/<ID>?Redirect=Write"` 로 재캡처.
 
@@ -120,6 +124,7 @@ node scripts/verify-options.mjs         # setPublishOptions 라이브 검증 + �
 ## 📋 git 히스토리 (이 세션)
 
 ```
+fix: 세션 영구 저장 - 로그인 시 "로그인 상태 유지" 자동 ON
 feat: Phase 2 - 발행 옵션(공개범위/댓글/공감) 자동화 + 라이브 검증
 feat: Phase 2 - 카테고리 자동화 실측 검증 + 반자동 발행 모달 전환
 docs: 2026-05-21 일일 핸드오프 추가
@@ -138,11 +143,10 @@ Initial commit from Create Next App
 
 우선순위 순:
 
-1. **세션 영구 저장 문제 해결** — 매 실행마다 재로그인 발생. 발행 UX 핵심. "로그인 상태 유지" 체크/`storageState` 검토
-2. **장소 첨부 실제 식당명 검증** — `자곡동`으로는 skip됐음. 실제 업소명+주소로 attachPlace 정상 동작 확인
-3. **SSE 실시간 로그** — 로그인 대기 중 UX 답답함 해결
-4. **즉시 발행 토글(완전 자동)** — 원하면 발행 모달 내 최종 [발행] 버튼 codegen 후 옵션화
-5. **Phase 3 — 경쟁사 크롤링 4-Stage** (PRD §3.4) — 진짜 SEO 엔진화
+1. **장소 첨부 실제 식당명 검증** — `자곡동`으로는 skip됐음. 실제 업소명+주소로 attachPlace 정상 동작 확인
+2. **SSE 실시간 로그** — 로그인 대기 중 UX 답답함 해결 (단, 세션 유지로 재로그인이 사라져 체감 우선순위↓)
+3. **즉시 발행 토글(완전 자동)** — 원하면 발행 모달 내 최종 [발행] 버튼 codegen 후 옵션화
+4. **Phase 3 — 경쟁사 크롤링 4-Stage** (PRD §3.4) — 진짜 SEO 엔진화
 
 ---
 
