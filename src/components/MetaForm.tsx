@@ -71,8 +71,8 @@ export function MetaForm() {
 
       <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900/30">
         <p className="mb-2 text-xs text-neutral-500">
-          ⚙️ 발행 옵션 (선택) — 카테고리는 임시저장 단계에서 적용됩니다.
-          공개범위/댓글/공감은 즉시 발행 토글 활성화 시(다음 단계) 사용됩니다.
+          ⚙️ 발행 옵션 (선택) — 카테고리·공개범위·댓글·공감을 발행 모달에서 자동 적용합니다.
+          최종 [발행]은 뜬 크롬 창에서 직접 확인 후 누르세요(반자동).
         </p>
         <div className="space-y-2">
           <input

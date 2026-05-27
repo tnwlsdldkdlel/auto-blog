@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { chromium, type BrowserContext, type Page, type Locator } from 'playwright';
+import { chromium, type BrowserContext, type Page, type Locator, type FrameLocator } from 'playwright';
 import type { LogLine } from '@/types/automation';
 import type { BlogPayload, BlogSection } from '@/types/blog-payload';
 
@@ -383,6 +383,116 @@ export async function setCategory(handle: BotHandle, categoryName: string): Prom
   }
 
   await page.waitForTimeout(400);
+}
+
+/**
+ * 토글(체크박스/라디오) 현재 상태를 읽는다. 못 읽으면 null.
+ * 실측(2026-05): 네이버 발행옵션은 `<label for="id">텍스트</label>` + 별도 `input#id` 구조.
+ * 따라서 label의 for → getElementById로 실제 input을 찾아 .checked를 읽는다.
+ */
+async function readToggleState(frame: FrameLocator, label: string): Promise<boolean | null> {
+  const el = frame.getByText(label, { exact: true }).first();
+  try {
+    return await el.evaluate((node) => {
+      // node는 <label>. for로 연결된 별도 input을 우선 조회.
+      const forId = node.getAttribute('for');
+      if (forId) {
+        const input = node.ownerDocument.getElementById(forId) as HTMLInputElement | null;
+        if (input && typeof input.checked === 'boolean') return input.checked;
+      }
+      // fallback: label 내부 input, 또는 aria 속성
+      const inner = node.querySelector('input[type="checkbox"], input[type="radio"]') as
+        | HTMLInputElement
+        | null;
+      if (inner) return inner.checked;
+      const aria = node.getAttribute('aria-checked') ?? node.getAttribute('aria-pressed');
+      if (aria !== null) return aria === 'true';
+      return null;
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 발행 옵션(공개범위/댓글/공감) 설정. **발행 모달이 열려 있어야 한다**.
+ * codegen 실측(2026-05):
+ *   공개범위: getByText('전체공개') / getByText('비공개')  — 라디오(클릭=설정, idempotent)
+ *   댓글허용: getByText('댓글허용')   — 토글(클릭=상태 반전)
+ *   공감허용: getByText('공감허용')   — 토글
+ * 토글은 현재 상태를 읽어 원하는 값과 다를 때만 클릭한다. 상태 불명 시 보류(경고).
+ * 반자동이므로 보류돼도 사람이 모달에서 직접 확인/조정 가능.
+ */
+export async function setPublishOptions(
+  handle: BotHandle,
+  options: { commentAllow: boolean; sympathyAllow: boolean; isPublic: 'all' | 'private' },
+): Promise<void> {
+  const { page, log } = handle;
+  const frame = page.frameLocator('iframe[name="mainFrame"]');
+
+  // 1) 공개범위 — 라디오: 원하는 항목 클릭(설정). exact 우선, 실패 시 부분일치.
+  const visLabel = options.isPublic === 'private' ? '비공개' : '전체공개';
+  const visCandidates: Locator[] = [
+    frame.getByText(visLabel, { exact: true }).first(),
+    frame.getByText(visLabel).first(),
+  ];
+  let visSet = false;
+  for (const loc of visCandidates) {
+    try {
+      await loc.waitFor({ timeout: 2000 });
+      await loc.click();
+      visSet = true;
+      log('info', `✓ 공개범위: ${visLabel}`);
+      break;
+    } catch {
+      continue;
+    }
+  }
+  if (!visSet) log('warn', `공개범위 "${visLabel}" 미감지 — skip`);
+
+  await page.waitForTimeout(300);
+
+  // 2) 댓글허용 / 공감허용 — 토글: 현재 상태와 다를 때만 클릭
+  await setToggle(handle, '댓글허용', options.commentAllow);
+  await setToggle(handle, '공감허용', options.sympathyAllow);
+}
+
+/**
+ * 토글을 원하는 상태로 맞춘다. 이미 같으면 클릭 안 함. 상태 불명이면 보류(경고).
+ */
+async function setToggle(handle: BotHandle, label: string, desired: boolean): Promise<void> {
+  const { page, log } = handle;
+  const frame = page.frameLocator('iframe[name="mainFrame"]');
+  const el = frame.getByText(label, { exact: true }).first();
+
+  try {
+    await el.waitFor({ timeout: 2000 });
+  } catch {
+    log('warn', `"${label}" 미감지 — skip`);
+    return;
+  }
+
+  const want = desired ? '허용' : '비허용';
+  const state = await readToggleState(frame, label);
+
+  if (state === null) {
+    log(
+      'warn',
+      `"${label}" 현재 상태 불명 — 자동 토글 보류(오작동 방지). 발행 모달에서 직접 ${want}으로 확인하세요`,
+    );
+    return;
+  }
+  if (state === desired) {
+    log('info', `✓ "${label}" 이미 ${want} 상태 — 유지`);
+    return;
+  }
+  try {
+    await el.click();
+    log('info', `✓ "${label}" → ${want}으로 변경`);
+    await page.waitForTimeout(200);
+  } catch {
+    log('warn', `"${label}" 토글 클릭 실패 — skip`);
+  }
 }
 
 /**

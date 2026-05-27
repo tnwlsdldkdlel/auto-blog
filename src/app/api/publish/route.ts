@@ -12,6 +12,7 @@ import {
   attachPlace,
   openPublishModal,
   setCategory,
+  setPublishOptions,
   resolveUserDataDir,
   resolveBlogId,
 } from '@/lib/naver-bot';
@@ -101,6 +102,7 @@ export async function POST(req: NextRequest) {
       if (payload.categoryCode && payload.categoryCode.trim()) {
         await setCategory(handle, payload.categoryCode);
       }
+      await setPublishOptions(handle, payload.options);
     } catch (modalErr) {
       const msg = modalErr instanceof Error ? modalErr.message : 'unknown';
       handle.log('warn', `발행 모달/카테고리 단계 예외 — 브라우저는 열어둡니다(직접 진행): ${msg}`);
