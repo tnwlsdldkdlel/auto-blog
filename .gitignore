@@ -48,3 +48,6 @@ next-env.d.ts
 
 # docs (PRD 등 로컬 기획 문서)
 /docs/
+
+# 셀렉터 진단 디버그 스크린샷 (verify-place.mjs)
+/scripts/place-debug-*.png

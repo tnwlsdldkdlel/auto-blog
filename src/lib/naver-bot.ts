@@ -326,14 +326,18 @@ export async function attachPlace(
 
   await page.waitForTimeout(2000);
 
-  // 5) '추가' 버튼 (검색 결과의 한 항목 추가) — codegen: '추가' exact
+  // 5) 검색 결과 첫 항목의 '추가' 버튼 클릭.
+  //    실측(2026-05): li.se-place-map-search-result-item 안의 .se-place-add-button은
+  //    기본 display:none이고 행에 hover해야 노출된다. role/name으론 안 잡혀 CSS 클래스+hover로 접근.
   try {
-    const addBtn = frame.getByRole('button', { name: '추가', exact: true }).first();
-    await addBtn.waitFor({ timeout: 3000 });
-    await addBtn.click();
-    log('info', '✓ "추가" 버튼 클릭');
+    const firstItem = frame.locator('.se-place-map-search-result-item').first();
+    await firstItem.waitFor({ timeout: 3000 });
+    await firstItem.hover();
+    await page.waitForTimeout(300);
+    await firstItem.locator('.se-place-add-button').first().click({ timeout: 2000 });
+    log('info', '✓ 검색 결과 첫 항목 "추가" 클릭');
   } catch {
-    log('warn', '"추가" 버튼 미감지 — 검색 결과 없을 가능성, skip');
+    log('warn', '검색 결과 "추가" 버튼 미감지 — skip (검색 결과 없거나 UI 변경, 전체 발행은 계속)');
     return;
   }
 
