@@ -42,9 +42,7 @@ export function ImageUploader() {
             : 'border-neutral-300 dark:border-neutral-700 hover:border-neutral-500'
         }`}
       >
-        <p className="text-neutral-500">
-          이미지를 드래그하거나 클릭해서 업로드
-        </p>
+        <p className="text-neutral-500">이미지를 드래그하거나 클릭해서 업로드</p>
         <input
           ref={inputRef}
           type="file"

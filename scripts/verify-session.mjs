@@ -18,7 +18,8 @@ function loadEnv() {
     const eq = line.indexOf('=');
     if (eq === -1) continue;
     let v = line.slice(eq + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
+      v = v.slice(1, -1);
     out[line.slice(0, eq).trim()] = v;
   }
   return out;
@@ -26,7 +27,8 @@ function loadEnv() {
 
 const env = loadEnv();
 const blogId = env.NAVER_BLOG_ID?.trim();
-const userDataDir = env.PLAYWRIGHT_USER_DATA_DIR?.trim() || path.resolve(process.cwd(), '.playwright-user-data');
+const userDataDir =
+  env.PLAYWRIGHT_USER_DATA_DIR?.trim() || path.resolve(process.cwd(), '.playwright-user-data');
 const writeUrl = `https://blog.naver.com/${blogId}?Redirect=Write`;
 const isLogin = (u) => u.includes('nid.naver.com') || u.includes('nidlogin');
 
@@ -89,7 +91,9 @@ await page.waitForTimeout(2000);
 const url2 = page.url();
 console.log(`[2차] URL: ${url2}`);
 if (isLogin(url2)) {
-  console.log('\n❌ 결과: 2차에서도 로그인 페이지 — 세션 유지 실패(쿠키가 여전히 세션 쿠키일 가능성)');
+  console.log(
+    '\n❌ 결과: 2차에서도 로그인 페이지 — 세션 유지 실패(쿠키가 여전히 세션 쿠키일 가능성)',
+  );
 } else {
   console.log('\n✅ 결과: 2차에서 로그인 생략 — 세션 영구 저장 성공! 재로그인 불필요');
 }

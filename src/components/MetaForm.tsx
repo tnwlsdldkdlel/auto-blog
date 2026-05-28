@@ -23,9 +23,7 @@ export function MetaForm() {
   return (
     <div className="space-y-3">
       <div>
-        <label className="mb-1 block text-sm font-medium">
-          메인 키워드
-        </label>
+        <label className="mb-1 block text-sm font-medium">메인 키워드</label>
         <input
           type="text"
           value={keyword}
@@ -35,9 +33,7 @@ export function MetaForm() {
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">
-          톤앤매너 / 추가 요청 (선택)
-        </label>
+        <label className="mb-1 block text-sm font-medium">톤앤매너 / 추가 요청 (선택)</label>
         <textarea
           value={toneNote}
           onChange={(e) => setToneNote(e.target.value)}
@@ -48,8 +44,8 @@ export function MetaForm() {
       </div>
       <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900/30">
         <p className="mb-2 text-xs text-neutral-500">
-          📍 식당 위치 (선택) — 입력하면 네이버 지도가 본문에 자동 첨부됩니다.
-          비워두면 AI가 추측하며, 실패 시 지도 없이 발행됩니다.
+          📍 식당 위치 (선택) — 입력하면 네이버 지도가 본문에 자동 첨부됩니다. 비워두면 AI가
+          추측하며, 실패 시 지도 없이 발행됩니다.
         </p>
         <div className="grid grid-cols-2 gap-2">
           <input
@@ -71,8 +67,8 @@ export function MetaForm() {
 
       <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900/30">
         <p className="mb-2 text-xs text-neutral-500">
-          ⚙️ 발행 옵션 (선택) — 카테고리·공개범위·댓글·공감을 발행 모달에서 자동 적용합니다.
-          최종 [발행]은 뜬 크롬 창에서 직접 확인 후 누르세요(반자동).
+          ⚙️ 발행 옵션 (선택) — 카테고리·공개범위·댓글·공감을 발행 모달에서 자동 적용합니다. 최종
+          [발행]은 뜬 크롬 창에서 직접 확인 후 누르세요(반자동).
         </p>
         <div className="space-y-2">
           <input

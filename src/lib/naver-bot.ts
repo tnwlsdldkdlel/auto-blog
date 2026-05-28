@@ -1,5 +1,11 @@
 import path from 'node:path';
-import { chromium, type BrowserContext, type Page, type Locator, type FrameLocator } from 'playwright';
+import {
+  chromium,
+  type BrowserContext,
+  type Page,
+  type Locator,
+  type FrameLocator,
+} from 'playwright';
 import type { LogLine } from '@/types/automation';
 import type { BlogPayload, BlogSection } from '@/types/blog-payload';
 
@@ -108,10 +114,9 @@ export async function waitForEditor(
 ): Promise<void> {
   const { page, log } = handle;
 
-  await page.waitForLoadState('domcontentloaded').catch(() => { });
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
   const url = page.url();
-  const isLoginPage =
-    url.includes('nid.naver.com') || url.includes('nidlogin.login');
+  const isLoginPage = url.includes('nid.naver.com') || url.includes('nidlogin.login');
 
   if (isLoginPage) {
     log(
@@ -128,7 +133,7 @@ export async function waitForEditor(
         { timeout: loginWaitMs },
       );
       log('info', '✓ 로그인 완료 — 글쓰기 페이지 로딩 대기');
-      await page.waitForLoadState('domcontentloaded').catch(() => { });
+      await page.waitForLoadState('domcontentloaded').catch(() => {});
     } catch {
       throw new Error('LOGIN_TIMEOUT');
     }
@@ -190,7 +195,10 @@ export async function fillTitleAndBody(handle: BotHandle, payload: BlogPayload):
   // codegen: locator('div').filter({ hasText: /^본문 추가$/ })
   const bodyCandidates = [
     frame.locator('.se-section-text .se-text-paragraph').first(),
-    frame.locator('div').filter({ hasText: /^본문 추가$/ }).first(),
+    frame
+      .locator('div')
+      .filter({ hasText: /^본문 추가$/ })
+      .first(),
   ];
   await clickFirstAvailable(bodyCandidates, 'body');
   await page.keyboard.insertText(bodyText);
@@ -272,7 +280,10 @@ export async function attachPlace(
 
   // 본문 끝 커서 이동 (codegen 일치)
   try {
-    const bodyArea = frame.locator('div').filter({ hasText: /^본문 추가$/ }).first();
+    const bodyArea = frame
+      .locator('div')
+      .filter({ hasText: /^본문 추가$/ })
+      .first();
     await bodyArea.click({ timeout: 1500 });
   } catch {
     try {
@@ -282,7 +293,7 @@ export async function attachPlace(
       // 본문 위치 못 잡아도 툴바 버튼은 시도
     }
   }
-  await page.keyboard.press('End').catch(() => { });
+  await page.keyboard.press('End').catch(() => {});
 
   // 1) '장소 추가' 툴바 버튼 — codegen 확인
   try {
@@ -312,7 +323,10 @@ export async function attachPlace(
 
   // 3) 자동완성 옵션 선택 (codegen: role=option) — 매칭 우선, 없으면 첫 번째
   const optionCandidates: Locator[] = [
-    frame.getByRole('option').filter({ hasText: place.name || place.address }).first(),
+    frame
+      .getByRole('option')
+      .filter({ hasText: place.name || place.address })
+      .first(),
     frame.getByRole('option').first(),
   ];
   let optionClicked = false;
@@ -442,9 +456,9 @@ async function readToggleState(frame: FrameLocator, label: string): Promise<bool
         if (input && typeof input.checked === 'boolean') return input.checked;
       }
       // fallback: label 내부 input, 또는 aria 속성
-      const inner = node.querySelector('input[type="checkbox"], input[type="radio"]') as
-        | HTMLInputElement
-        | null;
+      const inner = node.querySelector(
+        'input[type="checkbox"], input[type="radio"]',
+      ) as HTMLInputElement | null;
       if (inner) return inner.checked;
       const aria = node.getAttribute('aria-checked') ?? node.getAttribute('aria-pressed');
       if (aria !== null) return aria === 'true';

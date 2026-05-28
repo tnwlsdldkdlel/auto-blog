@@ -13,40 +13,40 @@
 
 ## ✅ 동작 검증 완료
 
-| 영역 | 상태 |
-|---|---|
-| Next.js 16 + Tailwind 4 + TS 스캐폴딩 | ✅ |
-| 이미지 멀티 업로드 + 키워드/톤노트/식당명/주소/옵션 입력 UI | ✅ |
-| GPT-4o Vision → BlogPayload JSON Structured Outputs | ✅ (zod `nullable` + `union` 필수) |
-| Playwright Persistent Context 세션 재활용 | ✅ (`.playwright-user-data/`) |
-| **세션 영구 저장** — 로그인 페이지에서 `#keep`("로그인 상태 유지") 자동 ON | ✅ 1차 로그인→2차 재실행 로그인 생략 검증 (2026-05-27) |
-| **에디터 로딩 감지** — `.se-text-paragraph` 기준(숨김 contenteditable 헬퍼 회피) | ✅ 안정화 (2026-05-28) |
-| 로그인 페이지 감지 시 최대 5분 사용자 로그인 대기 | ✅ |
-| 제목/본문 자동 입력 + 복구 팝업 회피 | ✅ |
-| 이미지 일괄 첨부(filechooser) + 첨부 후 사이드 패널 닫기 | ✅ |
-| **네이버 지도 place 첨부** (장소 추가 → 검색 → 자동완성 → **행 hover→추가** → 확인) | ✅ 본문 `se-placesMap` 삽입까지 DOM 검증 (2026-05-28) |
-| **발행 모달 열기 + 카테고리 자동 선택** (발행 → 카테고리 목록 버튼 → 항목) | ✅ 라이브 검증 완료 (2026-05-26) |
-| **발행 옵션 자동화** (공개범위 라디오 + 댓글/공감 토글, 상태 읽어 mismatch만 클릭) | ✅ 라이브 검증 완료 (2026-05-27) |
-| **실제 앱 전체 플로우** (사진+키워드 → AI 생성 → 자동화 → 발행 모달 → 실제 1편 발행) | ✅ 1회 발행 검증 완료 (2026-05-27) |
-| 임시저장 클릭 (`saveAsDraft`, 함수는 남아있으나 현재 플로우 미사용) | ✅ (현재 반자동으로 대체) |
-| §5.1 1단계 실패 처리(에디터 미감지) | ✅ |
-| §5.2 글 보존 — **본문 진입(`editorReady`) 후** 어떤 실패든 브라우저 안 닫고 글 유지 | ✅ catch 분기로 강화 (2026-05-28) |
-| 브라우저 잔존 충돌 처리 — 이전 발행 창 열린 채 재시도 시 `BROWSER_ALREADY_OPEN` 안내 | ✅ (2026-05-28, 코드리뷰 후속) |
+| 영역                                                                                 | 상태                                                   |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| Next.js 16 + Tailwind 4 + TS 스캐폴딩                                                | ✅                                                     |
+| 이미지 멀티 업로드 + 키워드/톤노트/식당명/주소/옵션 입력 UI                          | ✅                                                     |
+| GPT-4o Vision → BlogPayload JSON Structured Outputs                                  | ✅ (zod `nullable` + `union` 필수)                     |
+| Playwright Persistent Context 세션 재활용                                            | ✅ (`.playwright-user-data/`)                          |
+| **세션 영구 저장** — 로그인 페이지에서 `#keep`("로그인 상태 유지") 자동 ON           | ✅ 1차 로그인→2차 재실행 로그인 생략 검증 (2026-05-27) |
+| **에디터 로딩 감지** — `.se-text-paragraph` 기준(숨김 contenteditable 헬퍼 회피)     | ✅ 안정화 (2026-05-28)                                 |
+| 로그인 페이지 감지 시 최대 5분 사용자 로그인 대기                                    | ✅                                                     |
+| 제목/본문 자동 입력 + 복구 팝업 회피                                                 | ✅                                                     |
+| 이미지 일괄 첨부(filechooser) + 첨부 후 사이드 패널 닫기                             | ✅                                                     |
+| **네이버 지도 place 첨부** (장소 추가 → 검색 → 자동완성 → **행 hover→추가** → 확인)  | ✅ 본문 `se-placesMap` 삽입까지 DOM 검증 (2026-05-28)  |
+| **발행 모달 열기 + 카테고리 자동 선택** (발행 → 카테고리 목록 버튼 → 항목)           | ✅ 라이브 검증 완료 (2026-05-26)                       |
+| **발행 옵션 자동화** (공개범위 라디오 + 댓글/공감 토글, 상태 읽어 mismatch만 클릭)   | ✅ 라이브 검증 완료 (2026-05-27)                       |
+| **실제 앱 전체 플로우** (사진+키워드 → AI 생성 → 자동화 → 발행 모달 → 실제 1편 발행) | ✅ 1회 발행 검증 완료 (2026-05-27)                     |
+| 임시저장 클릭 (`saveAsDraft`, 함수는 남아있으나 현재 플로우 미사용)                  | ✅ (현재 반자동으로 대체)                              |
+| §5.1 1단계 실패 처리(에디터 미감지)                                                  | ✅                                                     |
+| §5.2 글 보존 — **본문 진입(`editorReady`) 후** 어떤 실패든 브라우저 안 닫고 글 유지  | ✅ catch 분기로 강화 (2026-05-28)                      |
+| 브라우저 잔존 충돌 처리 — 이전 발행 창 열린 채 재시도 시 `BROWSER_ALREADY_OPEN` 안내 | ✅ (2026-05-28, 코드리뷰 후속)                         |
 
 ---
 
 ## ⏳ 미완 / 다음 작업 후보
 
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| ~~카테고리 자동화 E2E 검증~~ | ✅ 완료 (2026-05-26) | Task #15. 발행 모달 안에 있음 확인 + 라이브 검증 통과 |
-| ~~공개범위/댓글/공감 자동화~~ | ✅ 완료 (2026-05-27) | `setPublishOptions` 추가. 토글은 `for`→input `.checked` 읽어 mismatch만 클릭 |
-| ~~세션 영구 저장 안 됨~~ | ✅ 완료 (2026-05-27) | `enableKeepLogin()` — 로그인 전 `#keep` 자동 ON. 영구 쿠키 발급돼 재로그인 불필요 |
-| ~~장소 첨부 — 추가 버튼 미감지~~ | ✅ 완료 (2026-05-28) | 셀렉터 버그였음(입력 문제 아님). `.se-place-add-button`이 행 hover 시에만 노출 → hover 후 클릭. 본문 `se-placesMap` 삽입까지 DOM 검증 완료 |
-| **즉시 발행 토글(완전 자동 발행)** | ❌ (다음 후보) | 현재는 반자동(사람이 최종 발행). 완전 자동 원하면 발행 모달 안 최종 [발행] 버튼 셀렉터 codegen 필요 |
-| **SSE 실시간 로그** | ❌ | 현재 fetch 종료 시 한꺼번에 로그 받음. 로그인 대기 중 UX 답답함 해결용 |
-| **경쟁사 크롤링 4-Stage (Phase 3)** | ❌ | PRD §3.4 SEO Fact Extraction. RefinedStoreInfo + Fact Extractor + 본문 큐레이션 |
-| **코드리뷰 잔여(우선순위 낮음)** | ❌ | ①매직넘버 타임아웃 상수화 ②scripts↔naver-bot 셀렉터 중복 제거(공유 모듈) ③attachPlace/setPublishOptions inline 타입을 BlogPayload 참조로 ④attachImages 업로드 대기를 시간→신호 기반으로 ⑤`saveAsDraft` dead code 처리 |
+| 항목                                | 상태                 | 비고                                                                                                                                                                                                                  |
+| ----------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~카테고리 자동화 E2E 검증~~        | ✅ 완료 (2026-05-26) | Task #15. 발행 모달 안에 있음 확인 + 라이브 검증 통과                                                                                                                                                                 |
+| ~~공개범위/댓글/공감 자동화~~       | ✅ 완료 (2026-05-27) | `setPublishOptions` 추가. 토글은 `for`→input `.checked` 읽어 mismatch만 클릭                                                                                                                                          |
+| ~~세션 영구 저장 안 됨~~            | ✅ 완료 (2026-05-27) | `enableKeepLogin()` — 로그인 전 `#keep` 자동 ON. 영구 쿠키 발급돼 재로그인 불필요                                                                                                                                     |
+| ~~장소 첨부 — 추가 버튼 미감지~~    | ✅ 완료 (2026-05-28) | 셀렉터 버그였음(입력 문제 아님). `.se-place-add-button`이 행 hover 시에만 노출 → hover 후 클릭. 본문 `se-placesMap` 삽입까지 DOM 검증 완료                                                                            |
+| **즉시 발행 토글(완전 자동 발행)**  | ❌ (다음 후보)       | 현재는 반자동(사람이 최종 발행). 완전 자동 원하면 발행 모달 안 최종 [발행] 버튼 셀렉터 codegen 필요                                                                                                                   |
+| **SSE 실시간 로그**                 | ❌                   | 현재 fetch 종료 시 한꺼번에 로그 받음. 로그인 대기 중 UX 답답함 해결용                                                                                                                                                |
+| **경쟁사 크롤링 4-Stage (Phase 3)** | ❌                   | PRD §3.4 SEO Fact Extraction. RefinedStoreInfo + Fact Extractor + 본문 큐레이션                                                                                                                                       |
+| **코드리뷰 잔여(우선순위 낮음)**    | ❌                   | ①매직넘버 타임아웃 상수화 ②scripts↔naver-bot 셀렉터 중복 제거(공유 모듈) ③attachPlace/setPublishOptions inline 타입을 BlogPayload 참조로 ④attachImages 업로드 대기를 시간→신호 기반으로 ⑤`saveAsDraft` dead code 처리 |
 
 ---
 
@@ -79,27 +79,27 @@ node scripts/verify-place.mjs "스타벅스 강남R점"  # 장소 첨부 라이�
 
 ## 🔑 핵심 셀렉터 (네이버 스마트에디터 ONE, 2026-05 기준)
 
-| 위치 | 셀렉터 |
-|---|---|
-| iframe | `iframe[name="mainFrame"]` |
-| **에디터 로딩 감지** | `.se-text-paragraph` 첫 요소 visible 대기 (❌ `div[contenteditable="true"]`은 숨김 클립보드 헬퍼와 섞여 불안정) |
-| 제목 | `.se-section-documentTitle .se-text-paragraph` 또는 `role=paragraph filter="제목"` |
-| 본문 | `.se-section-text .se-text-paragraph` 또는 `div filter="본문 추가"` |
-| 사진 추가 | `getByRole('button', { name: '사진 추가' })` → filechooser |
-| 첨부 후 닫기 | `getByRole('button', { name: '닫기', exact: true })` |
-| 장소 추가 | `getByRole('button', { name: '장소 추가' })` |
-| 장소 검색창 | `getByRole('textbox', { name: '장소명을 입력하세요' })` |
-| 자동완성 옵션 | `getByRole('option')` 첫 번째 또는 hasText 매칭 |
-| **장소 검색결과 추가** | `.se-place-map-search-result-item`(행) **hover** → 내부 `.se-place-add-button` 클릭 ✅ (추가버튼은 기본 `display:none`, 행 hover 시 노출. `getByRole('button',{name:'추가'})`로는 못 잡음) |
-| 장소 삽입 확인 | `getByRole('button', { name: '확인' })` → 본문에 `se-component se-placesMap` 삽입됨 |
-| 저장(임시저장) | iframe 내부 `getByRole('button', { name: '저장', exact: true })` |
-| **발행 모달 열기** | iframe 내부 `getByRole('button', { name: '발행' })` ✅ |
-| **카테고리 드롭다운** | iframe 내부 `getByRole('button', { name: '카테고리 목록 버튼' })` ✅ (실측. 기존 `'카테고리'` 추측은 오답이었음) |
-| **카테고리 항목** | iframe 내부 `getByRole('button', { name: '<카테고리명>' })` ✅ (substring 매칭) |
-| **공개범위(라디오)** | iframe 내부 `getByText('전체공개')` / `getByText('비공개')` ✅ (label for=`open_public`/`open_private`) |
-| **댓글허용/공감허용(토글)** | iframe 내부 `getByText('댓글허용')` / `getByText('공감허용')` ✅ (label for=`publish-option-comment`/`publish-option-sympathy`. 상태는 for→input `.checked`로 읽음) |
-| 최종 발행 버튼 (미검증) | 발행 모달 안 별도 `'발행'` 버튼 추정 — 완전 자동화 시 codegen 필요 |
-| **로그인 상태 유지** (로그인 페이지, 최상위) | `#keep[role="checkbox"]` (div, `aria-checked`). 기본 OFF → 로그인 전 자동 클릭 ✅ |
+| 위치                                         | 셀렉터                                                                                                                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| iframe                                       | `iframe[name="mainFrame"]`                                                                                                                                                                 |
+| **에디터 로딩 감지**                         | `.se-text-paragraph` 첫 요소 visible 대기 (❌ `div[contenteditable="true"]`은 숨김 클립보드 헬퍼와 섞여 불안정)                                                                            |
+| 제목                                         | `.se-section-documentTitle .se-text-paragraph` 또는 `role=paragraph filter="제목"`                                                                                                         |
+| 본문                                         | `.se-section-text .se-text-paragraph` 또는 `div filter="본문 추가"`                                                                                                                        |
+| 사진 추가                                    | `getByRole('button', { name: '사진 추가' })` → filechooser                                                                                                                                 |
+| 첨부 후 닫기                                 | `getByRole('button', { name: '닫기', exact: true })`                                                                                                                                       |
+| 장소 추가                                    | `getByRole('button', { name: '장소 추가' })`                                                                                                                                               |
+| 장소 검색창                                  | `getByRole('textbox', { name: '장소명을 입력하세요' })`                                                                                                                                    |
+| 자동완성 옵션                                | `getByRole('option')` 첫 번째 또는 hasText 매칭                                                                                                                                            |
+| **장소 검색결과 추가**                       | `.se-place-map-search-result-item`(행) **hover** → 내부 `.se-place-add-button` 클릭 ✅ (추가버튼은 기본 `display:none`, 행 hover 시 노출. `getByRole('button',{name:'추가'})`로는 못 잡음) |
+| 장소 삽입 확인                               | `getByRole('button', { name: '확인' })` → 본문에 `se-component se-placesMap` 삽입됨                                                                                                        |
+| 저장(임시저장)                               | iframe 내부 `getByRole('button', { name: '저장', exact: true })`                                                                                                                           |
+| **발행 모달 열기**                           | iframe 내부 `getByRole('button', { name: '발행' })` ✅                                                                                                                                     |
+| **카테고리 드롭다운**                        | iframe 내부 `getByRole('button', { name: '카테고리 목록 버튼' })` ✅ (실측. 기존 `'카테고리'` 추측은 오답이었음)                                                                           |
+| **카테고리 항목**                            | iframe 내부 `getByRole('button', { name: '<카테고리명>' })` ✅ (substring 매칭)                                                                                                            |
+| **공개범위(라디오)**                         | iframe 내부 `getByText('전체공개')` / `getByText('비공개')` ✅ (label for=`open_public`/`open_private`)                                                                                    |
+| **댓글허용/공감허용(토글)**                  | iframe 내부 `getByText('댓글허용')` / `getByText('공감허용')` ✅ (label for=`publish-option-comment`/`publish-option-sympathy`. 상태는 for→input `.checked`로 읽음)                        |
+| 최종 발행 버튼 (미검증)                      | 발행 모달 안 별도 `'발행'` 버튼 추정 — 완전 자동화 시 codegen 필요                                                                                                                         |
+| **로그인 상태 유지** (로그인 페이지, 최상위) | `#keep[role="checkbox"]` (div, `aria-checked`). 기본 OFF → 로그인 전 자동 클릭 ✅                                                                                                          |
 
 > ⚠️ 네이버는 종종 마이너 UI 변경. 깨지면 `npx playwright codegen --viewport-size=1280,900 "https://blog.naver.com/<ID>?Redirect=Write"` 로 재캡처.
 

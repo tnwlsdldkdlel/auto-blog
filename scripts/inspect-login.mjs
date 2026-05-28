@@ -17,7 +17,8 @@ function loadEnv() {
     const eq = line.indexOf('=');
     if (eq === -1) continue;
     let v = line.slice(eq + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
+      v = v.slice(1, -1);
     out[line.slice(0, eq).trim()] = v;
   }
   return out;
@@ -25,7 +26,8 @@ function loadEnv() {
 
 const env = loadEnv();
 const blogId = env.NAVER_BLOG_ID?.trim();
-const userDataDir = env.PLAYWRIGHT_USER_DATA_DIR?.trim() || path.resolve(process.cwd(), '.playwright-user-data');
+const userDataDir =
+  env.PLAYWRIGHT_USER_DATA_DIR?.trim() || path.resolve(process.cwd(), '.playwright-user-data');
 
 const context = await chromium.launchPersistentContext(userDataDir, {
   headless: false,
@@ -36,13 +38,17 @@ const context = await chromium.launchPersistentContext(userDataDir, {
 const page = context.pages()[0] ?? (await context.newPage());
 
 console.log('[login-probe] 글쓰기 진입(로그인 페이지로 리다이렉트 기대)');
-await page.goto(`https://blog.naver.com/${blogId}?Redirect=Write`, { waitUntil: 'domcontentloaded' });
+await page.goto(`https://blog.naver.com/${blogId}?Redirect=Write`, {
+  waitUntil: 'domcontentloaded',
+});
 await page.waitForTimeout(1500);
 
 const url = page.url();
 console.log(`[login-probe] 현재 URL: ${url}`);
 if (!url.includes('nid.naver.com') && !url.includes('nidlogin')) {
-  console.log('[login-probe] ⚠ 로그인 페이지가 아님(이미 로그인 상태일 수 있음). 그래도 keep 요소 탐색 시도.');
+  console.log(
+    '[login-probe] ⚠ 로그인 페이지가 아님(이미 로그인 상태일 수 있음). 그래도 keep 요소 탐색 시도.',
+  );
 }
 
 // "로그인 상태 유지" 관련 요소 전수 탐색
@@ -78,7 +84,11 @@ const result = await page.evaluate(() => {
   });
   // 3) 모든 체크박스
   document.querySelectorAll('input[type="checkbox"]').forEach((el) => {
-    out.checkboxes.push({ id: el.id || null, cls: typeof el.className === 'string' ? el.className : null, checked: el.checked });
+    out.checkboxes.push({
+      id: el.id || null,
+      cls: typeof el.className === 'string' ? el.className : null,
+      checked: el.checked,
+    });
   });
   return out;
 });

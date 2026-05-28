@@ -47,7 +47,9 @@ const context = await chromium.launchPersistentContext(userDataDir, {
 const page = context.pages()[0] ?? (await context.newPage());
 
 console.log(`[verify] 글쓰기 진입 (카테고리 검증 대상: "${categoryName}")`);
-await page.goto(`https://blog.naver.com/${blogId}?Redirect=Write`, { waitUntil: 'domcontentloaded' });
+await page.goto(`https://blog.naver.com/${blogId}?Redirect=Write`, {
+  waitUntil: 'domcontentloaded',
+});
 
 const url = page.url();
 if (url.includes('nid.naver.com') || url.includes('nidlogin.login')) {

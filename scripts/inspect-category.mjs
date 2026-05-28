@@ -35,10 +35,7 @@ function loadEnv() {
     const key = line.slice(0, eq).trim();
     let val = line.slice(eq + 1).trim();
     // 양쪽 따옴표 제거
-    if (
-      (val.startsWith('"') && val.endsWith('"')) ||
-      (val.startsWith("'") && val.endsWith("'"))
-    ) {
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
       val = val.slice(1, -1);
     }
     out[key] = val;
@@ -51,8 +48,7 @@ const blogId = env.NAVER_BLOG_ID?.trim();
 if (!blogId) throw new Error('NAVER_BLOG_ID가 .env에 없습니다.');
 
 const userDataDir =
-  env.PLAYWRIGHT_USER_DATA_DIR?.trim() ||
-  path.resolve(process.cwd(), '.playwright-user-data');
+  env.PLAYWRIGHT_USER_DATA_DIR?.trim() || path.resolve(process.cwd(), '.playwright-user-data');
 
 console.log(`[inspect] persistent context: ${userDataDir}`);
 const context = await chromium.launchPersistentContext(userDataDir, {

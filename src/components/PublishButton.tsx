@@ -70,7 +70,10 @@ export function PublishButton() {
         const display = [userPlaceName, userPlaceAddress].filter(Boolean).join(' / ');
         appendLog({ level: 'info', message: `✓ 사용자 입력 장소로 덮어쓰기: ${display}` });
       } else if (p.place) {
-        appendLog({ level: 'info', message: `✓ AI 추론 장소: ${p.place.name} / ${p.place.address}` });
+        appendLog({
+          level: 'info',
+          message: `✓ AI 추론 장소: ${p.place.name} / ${p.place.address}`,
+        });
       }
 
       // 사용자가 설정한 발행 옵션으로 항상 덮어쓰기

@@ -19,7 +19,8 @@ function loadEnv() {
     const eq = line.indexOf('=');
     if (eq === -1) continue;
     let v = line.slice(eq + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
+      v = v.slice(1, -1);
     out[line.slice(0, eq).trim()] = v;
   }
   return out;
@@ -31,7 +32,8 @@ const query = `${placeName} ${placeAddress}`.trim();
 
 const env = loadEnv();
 const blogId = env.NAVER_BLOG_ID?.trim();
-const userDataDir = env.PLAYWRIGHT_USER_DATA_DIR?.trim() || path.resolve(process.cwd(), '.playwright-user-data');
+const userDataDir =
+  env.PLAYWRIGHT_USER_DATA_DIR?.trim() || path.resolve(process.cwd(), '.playwright-user-data');
 const shot = (name) => path.resolve(process.cwd(), `scripts/place-debug-${name}.png`);
 
 const context = await chromium.launchPersistentContext(userDataDir, {
@@ -43,7 +45,9 @@ const context = await chromium.launchPersistentContext(userDataDir, {
 const page = context.pages()[0] ?? (await context.newPage());
 
 console.log(`[verify-place] 검색어: "${query}"`);
-await page.goto(`https://blog.naver.com/${blogId}?Redirect=Write`, { waitUntil: 'domcontentloaded' });
+await page.goto(`https://blog.naver.com/${blogId}?Redirect=Write`, {
+  waitUntil: 'domcontentloaded',
+});
 const isLogin = (u) => u.includes('nid.naver.com') || u.includes('nidlogin');
 if (isLogin(page.url())) {
   // 세션 유지 수정 적용 후엔 거의 안 뜨지만, 만약을 위해
@@ -88,9 +92,15 @@ try {
 
 // 본문 끝 커서
 try {
-  await frame.locator('div').filter({ hasText: /^본문 추가$/ }).first().click({ timeout: 1500 });
+  await frame
+    .locator('div')
+    .filter({ hasText: /^본문 추가$/ })
+    .first()
+    .click({ timeout: 1500 });
 } catch {
-  try { await frame.locator('.se-section-text .se-text-paragraph').last().click({ timeout: 1500 }); } catch {}
+  try {
+    await frame.locator('.se-section-text .se-text-paragraph').last().click({ timeout: 1500 });
+  } catch {}
 }
 await page.keyboard.press('End').catch(() => {});
 
@@ -120,7 +130,10 @@ await page.waitForTimeout(1300);
 // 3) 자동완성 옵션
 let optionClicked = false;
 for (const loc of [
-  frame.getByRole('option').filter({ hasText: placeName || placeAddress }).first(),
+  frame
+    .getByRole('option')
+    .filter({ hasText: placeName || placeAddress })
+    .first(),
   frame.getByRole('option').first(),
 ]) {
   try {
@@ -167,13 +180,28 @@ try {
         .slice(0, 6)
         .map((el) => {
           const clickable = el.closest('button,a,[role="button"],li') || el.parentElement || el;
-          return { tag: el.tagName, cls: clean(el.className), clickableTag: clickable.tagName, clickableCls: clean(clickable.className), html: clean(clickable.outerHTML).slice(0, 220) };
+          return {
+            tag: el.tagName,
+            cls: clean(el.className),
+            clickableTag: clickable.tagName,
+            clickableCls: clean(clickable.className),
+            html: clean(clickable.outerHTML).slice(0, 220),
+          };
         });
       // 2) '추가' 포함 버튼/링크(숨김 포함)
       const addBtns = [...document.querySelectorAll('button, a, [role="button"]')]
-        .filter((b) => clean(b.textContent).includes('추가') || (b.getAttribute('aria-label') || '').includes('추가'))
+        .filter(
+          (b) =>
+            clean(b.textContent).includes('추가') ||
+            (b.getAttribute('aria-label') || '').includes('추가'),
+        )
         .slice(0, 10)
-        .map((b) => ({ tag: b.tagName, aria: b.getAttribute('aria-label'), text: clean(b.textContent).slice(0, 24), cls: clean(b.className).slice(0, 60) }));
+        .map((b) => ({
+          tag: b.tagName,
+          aria: b.getAttribute('aria-label'),
+          text: clean(b.textContent).slice(0, 24),
+          cls: clean(b.className).slice(0, 60),
+        }));
       // 3) 첫 .se-place-add-button 의 조상 체인 + 컴퓨티드 스타일(숨김 방식 파악)
       const btn = document.querySelector('.se-place-add-button');
       let chain = [];
@@ -226,11 +254,24 @@ if (addOk) {
       const popup = document.querySelector('.se-insert-place');
       const popupGone = !popup || getComputedStyle(popup).display === 'none';
       // 본문 컴포넌트 중 지도/장소 관련 — 검색 팝업(.se-insert-place) 바깥의 것만
-      const all = [...document.querySelectorAll('[class*="se-module-map"], [class*="placesMap" i], [class*="se-map" i], [class*="se-place" i], [class*="se-section-map" i]')];
+      const all = [
+        ...document.querySelectorAll(
+          '[class*="se-module-map"], [class*="placesMap" i], [class*="se-map" i], [class*="se-place" i], [class*="se-section-map" i]',
+        ),
+      ];
       const inBody = all.filter((el) => !el.closest('.se-insert-place'));
-      const classes = [...new Set(inBody.map((el) => clean(el.className).slice(0, 60)))].slice(0, 8);
+      const classes = [...new Set(inBody.map((el) => clean(el.className).slice(0, 60)))].slice(
+        0,
+        8,
+      );
       // SE 본문 컴포넌트 전체(map/place 식별용)
-      const comps = [...new Set([...document.querySelectorAll('.se-component')].map((el) => clean(el.className).slice(0, 70)))].slice(0, 12);
+      const comps = [
+        ...new Set(
+          [...document.querySelectorAll('.se-component')].map((el) =>
+            clean(el.className).slice(0, 70),
+          ),
+        ),
+      ].slice(0, 12);
       return { popupGone, mapInBodyCount: inBody.length, mapClasses: classes, components: comps };
     });
     console.log(`  STEP7 검색 팝업 닫힘: ${body.popupGone ? '✓' : '✗(아직 열림)'}`);
@@ -248,7 +289,11 @@ console.log(`  📸 최종 스크린샷: ${shot('final')}`);
 const ok = addOk && typeof bodyInserted !== 'undefined' && bodyInserted;
 console.log(
   `\n[verify-place] ${
-    ok ? '✅ 장소가 본문에 삽입됨(완전 검증)' : addOk ? '⚠ 추가/확인은 됐으나 본문 삽입 확인 필요(위 STEP7 참고)' : '⚠ 추가 단계 실패 — 위 진단 참고'
+    ok
+      ? '✅ 장소가 본문에 삽입됨(완전 검증)'
+      : addOk
+        ? '⚠ 추가/확인은 됐으나 본문 삽입 확인 필요(위 STEP7 참고)'
+        : '⚠ 추가 단계 실패 — 위 진단 참고'
   }. 5초 후 닫음.`,
 );
 await page.waitForTimeout(5000);
