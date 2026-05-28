@@ -7,7 +7,7 @@
 
 ## 한 줄 요약
 
-**Phase 1 MVP 완료 → Phase 2 완료 + 완전 자동 발행 토글 구현(코드 완료, 라이브 미검증) — 기본은 반자동(사람이 최종 [발행]), 토글 ON 시 `seOnePublishBtn` data-testid로 자동 발행까지. Prettier 도입+베이스라인 적용. 남은 건 autoPublish 라이브 1회 검증, SSE 로그, Phase 3.**
+**Phase 1 MVP 완료 → Phase 2 완료 + 완전 자동 발행 토글 라이브 검증 완료 — 기본은 반자동(사람이 최종 [발행]), 토글 ON 시 `seOnePublishBtn` data-testid로 자동 발행까지 동작 확인(2026-05-28). Prettier 도입+베이스라인 적용. 남은 건 SSE 로그, Phase 3(경쟁사 크롤링).**
 
 ---
 
@@ -32,7 +32,7 @@
 | §5.1 1단계 실패 처리(에디터 미감지)                                                  | ✅                                                     |
 | §5.2 글 보존 — **본문 진입(`editorReady`) 후** 어떤 실패든 브라우저 안 닫고 글 유지  | ✅ catch 분기로 강화 (2026-05-28)                      |
 | 브라우저 잔존 충돌 처리 — 이전 발행 창 열린 채 재시도 시 `BROWSER_ALREADY_OPEN` 안내 | ✅ (2026-05-28, 코드리뷰 후속)                         |
-| **완전 자동 발행 토글** — UI 토글 + `clickFinalPublish()`(seOnePublishBtn) + PUBLISHED/AUTO_PUBLISH_TIMEOUT 응답 | ⏳ 코드 완성·tsc/lint/format 통과, **라이브 발행 검증 미완** (실제 1편 발행 필요) |
+| **완전 자동 발행 토글** — UI 토글 + `clickFinalPublish()`(seOnePublishBtn) + PUBLISHED/AUTO_PUBLISH_TIMEOUT 응답 | ✅ 라이브 1편 발행 검증 완료 (2026-05-28) |
 | Prettier 설정 + 베이스라인 적용                                                      | ✅ (2026-05-28) — `npm run format` / `format:check`    |
 
 ---
@@ -45,7 +45,7 @@
 | ~~공개범위/댓글/공감 자동화~~       | ✅ 완료 (2026-05-27) | `setPublishOptions` 추가. 토글은 `for`→input `.checked` 읽어 mismatch만 클릭                                                                                                                                          |
 | ~~세션 영구 저장 안 됨~~            | ✅ 완료 (2026-05-27) | `enableKeepLogin()` — 로그인 전 `#keep` 자동 ON. 영구 쿠키 발급돼 재로그인 불필요                                                                                                                                     |
 | ~~장소 첨부 — 추가 버튼 미감지~~    | ✅ 완료 (2026-05-28) | 셀렉터 버그였음(입력 문제 아님). `.se-place-add-button`이 행 hover 시에만 노출 → hover 후 클릭. 본문 `se-placesMap` 삽입까지 DOM 검증 완료                                                                            |
-| ~~즉시 발행 토글(완전 자동 발행)~~  | ⏳ 코드 완료(2026-05-28), 라이브 미검증 | `clickFinalPublish` + UI 토글 구현. 셀렉터는 `[data-testid="seOnePublishBtn"]`(네이버 stable test id). **다음 후보: 실제 1편으로 자동 발행 동작 확인** (OpenAI 비용 + 라이브 글) |
+| ~~즉시 발행 토글(완전 자동 발행)~~  | ✅ 완료 (2026-05-28) | `clickFinalPublish` + UI 토글 구현 + 라이브 1편 발행 검증 완료. 셀렉터는 `[data-testid="seOnePublishBtn"]`(네이버 stable test id) |
 | **SSE 실시간 로그**                 | ❌                   | 현재 fetch 종료 시 한꺼번에 로그 받음. 로그인 대기 중 UX 답답함 해결용                                                                                                                                                |
 | **경쟁사 크롤링 4-Stage (Phase 3)** | ❌                   | PRD §3.4 SEO Fact Extraction. RefinedStoreInfo + Fact Extractor + 본문 큐레이션                                                                                                                                       |
 | **코드리뷰 잔여(우선순위 낮음)**    | ❌                   | ①매직넘버 타임아웃 상수화 ②scripts↔naver-bot 셀렉터 중복 제거(공유 모듈) ③attachPlace/setPublishOptions inline 타입을 BlogPayload 참조로 ④attachImages 업로드 대기를 시간→신호 기반으로 ⑤`saveAsDraft` dead code 처리 |
@@ -162,9 +162,9 @@ Initial commit from Create Next App
 
 우선순위 순:
 
-1. **autoPublish 라이브 1회 검증** — `완전 자동 발행` 토글 ON으로 사진+키워드 → AI → 자동 발행까지 통째로 1편 발행해 동작 확인 (OpenAI 비용 + 라이브 글)
+1. **Phase 3 — 경쟁사 크롤링 4-Stage** (PRD §3.4) — 진짜 SEO 엔진화. RefinedStoreInfo + Fact Extractor + 본문 큐레이션
 2. **SSE 실시간 로그** — 로그인 대기 UX (단, 세션 유지로 재로그인 사라져 체감 우선순위↓)
-3. **Phase 3 — 경쟁사 크롤링 4-Stage** (PRD §3.4) — 진짜 SEO 엔진화
+3. **코드리뷰 잔여** — 매직넘버 상수화 / scripts↔naver-bot 중복 제거 / inline 타입 공유 등 (위 미완 표)
 4. (선택) 실제 발행 1회 — 사진+실제 식당명으로 통합 발행 한 번 더 돌려 최종 눈 확인 (OpenAI 비용)
 
 ---
