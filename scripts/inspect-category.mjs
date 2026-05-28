@@ -85,7 +85,7 @@ if (url.includes('nid.naver.com') || url.includes('nidlogin.login')) {
 try {
   await page.locator('iframe[name="mainFrame"]').first().waitFor({ timeout: 15000 });
   const frame = page.frameLocator('iframe[name="mainFrame"]');
-  await frame.locator('div[contenteditable="true"]').first().waitFor({ timeout: 15000 });
+  await frame.locator('.se-text-paragraph').first().waitFor({ timeout: 15000 });
   console.log('[inspect] ✓ 에디터 감지');
 
   // 복구 팝업이 있으면 닫기

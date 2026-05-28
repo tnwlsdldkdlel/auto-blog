@@ -127,8 +127,10 @@ export async function waitForEditor(
   try {
     await page.locator('iframe[name="mainFrame"]').first().waitFor({ timeout: timeoutMs });
     const frame = page.frameLocator('iframe[name="mainFrame"]');
-    await frame.locator('div[contenteditable="true"]').first().waitFor({ timeout: timeoutMs });
-    log('info', '✓ 에디터 contenteditable 감지 완료');
+    // 준비 신호는 fillTitleAndBody/attachImages가 실제로 조작하는 편집 표면(.se-text-paragraph).
+    // (div[contenteditable]은 숨김 클립보드 헬퍼와 섞여 불안정 — 실측 2026-05)
+    await frame.locator('.se-text-paragraph').first().waitFor({ timeout: timeoutMs });
+    log('info', '✓ 에디터 편집 영역(.se-text-paragraph) 감지 완료');
   } catch {
     throw new Error('NAVER_EDITOR_LOAD_FAILED');
   }

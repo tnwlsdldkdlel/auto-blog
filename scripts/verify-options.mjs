@@ -63,7 +63,7 @@ if (url.includes('nid.naver.com') || url.includes('nidlogin.login')) {
 }
 
 const frame = page.frameLocator('iframe[name="mainFrame"]');
-await frame.locator('div[contenteditable="true"]').first().waitFor({ timeout: 15000 });
+await frame.locator('.se-text-paragraph').first().waitFor({ timeout: 15000 });
 console.log('  ✓ 에디터 감지');
 try {
   const cancel = frame.getByRole('button', { name: '취소', exact: true }).first();

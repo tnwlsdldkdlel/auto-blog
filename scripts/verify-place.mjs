@@ -56,14 +56,35 @@ if (isLogin(page.url())) {
   await page.waitForURL((u) => !isLogin(u.toString()), { timeout: 300_000 });
 }
 
+// 글쓰기 페이지 로드 후 iframe 등장 대기 + 로드 시점 스크린샷
+await page.locator('iframe[name="mainFrame"]').first().waitFor({ timeout: 15000 });
+await page.waitForTimeout(1500);
+await page.screenshot({ path: shot('load') });
+console.log(`  📸 로드 시점 스크린샷: ${shot('load')}`);
+
 const frame = page.frameLocator('iframe[name="mainFrame"]');
-await frame.locator('div[contenteditable="true"]').first().waitFor({ timeout: 15000 });
-console.log('  ✓ 에디터 감지');
+
+// 에디터 준비 대기 — 실제 편집 표면 .se-text-paragraph
+try {
+  await frame.locator('.se-text-paragraph').first().waitFor({ timeout: 15000 });
+  console.log('  ✓ 에디터 감지(.se-text-paragraph)');
+} catch {
+  await page.screenshot({ path: shot('editor-fail') });
+  console.log(`  ✗ 에디터 미감지. 📸 ${shot('editor-fail')}`);
+  await context.close();
+  process.exit(0);
+}
+
+// 복구 팝업("이전에 작성하던 글") 있으면 닫기
 try {
   const cancel = frame.getByRole('button', { name: '취소', exact: true }).first();
   await cancel.waitFor({ timeout: 2500 });
   await cancel.click();
-} catch {}
+  console.log('  ✓ 복구 팝업 닫음');
+  await page.waitForTimeout(800);
+} catch {
+  console.log('  · 복구 팝업 없음');
+}
 
 // 본문 끝 커서
 try {
@@ -195,9 +216,41 @@ if (addOk) {
   }
 }
 
+// STEP7: 본문에 지도 컴포넌트가 실제 삽입됐는지 + 검색 팝업 닫혔는지 검증
+if (addOk) {
+  await page.waitForTimeout(2000);
+  try {
+    const f = page.frame({ name: 'mainFrame' });
+    const body = await f.evaluate(() => {
+      const clean = (s) => (s || '').replace(/\s+/g, ' ').trim();
+      const popup = document.querySelector('.se-insert-place');
+      const popupGone = !popup || getComputedStyle(popup).display === 'none';
+      // 본문 컴포넌트 중 지도/장소 관련 — 검색 팝업(.se-insert-place) 바깥의 것만
+      const all = [...document.querySelectorAll('[class*="se-module-map"], [class*="placesMap" i], [class*="se-map" i], [class*="se-place" i], [class*="se-section-map" i]')];
+      const inBody = all.filter((el) => !el.closest('.se-insert-place'));
+      const classes = [...new Set(inBody.map((el) => clean(el.className).slice(0, 60)))].slice(0, 8);
+      // SE 본문 컴포넌트 전체(map/place 식별용)
+      const comps = [...new Set([...document.querySelectorAll('.se-component')].map((el) => clean(el.className).slice(0, 70)))].slice(0, 12);
+      return { popupGone, mapInBodyCount: inBody.length, mapClasses: classes, components: comps };
+    });
+    console.log(`  STEP7 검색 팝업 닫힘: ${body.popupGone ? '✓' : '✗(아직 열림)'}`);
+    console.log(`  STEP7 본문 내 지도/장소 컴포넌트 수: ${body.mapInBodyCount}`);
+    console.log('  STEP7 지도 컴포넌트 class: ' + JSON.stringify(body.mapClasses));
+    console.log('  STEP7 본문 .se-component 목록: ' + JSON.stringify(body.components));
+    var bodyInserted = body.popupGone && body.mapInBodyCount > 0;
+  } catch (e) {
+    console.log(`  STEP7 본문 검증 실패: ${e.message}`);
+  }
+}
+
 await page.screenshot({ path: shot('final'), fullPage: false });
 console.log(`  📸 최종 스크린샷: ${shot('final')}`);
-console.log(`\n[verify-place] ${addOk ? '✅ 장소 첨부 성공' : '⚠ 추가 단계 실패 — 위 진단 참고'}. 5초 후 닫음.`);
+const ok = addOk && typeof bodyInserted !== 'undefined' && bodyInserted;
+console.log(
+  `\n[verify-place] ${
+    ok ? '✅ 장소가 본문에 삽입됨(완전 검증)' : addOk ? '⚠ 추가/확인은 됐으나 본문 삽입 확인 필요(위 STEP7 참고)' : '⚠ 추가 단계 실패 — 위 진단 참고'
+  }. 5초 후 닫음.`,
+);
 await page.waitForTimeout(5000);
 await context.close();
 console.log('[verify-place] 완료');
