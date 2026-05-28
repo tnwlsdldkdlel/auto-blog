@@ -1,0 +1,19 @@
+# 빌드/의존성
+node_modules/
+.next/
+out/
+build/
+
+# 락파일/생성물
+package-lock.json
+next-env.d.ts
+
+# Playwright 세션/디버그 산출물
+.playwright-user-data/
+scripts/place-debug-*.png
+
+# 로컬 문서/메모리
+docs/
+
+# Claude Code 벤더링 산출물(스킬/설정) — 내 코드 아님
+.claude/
