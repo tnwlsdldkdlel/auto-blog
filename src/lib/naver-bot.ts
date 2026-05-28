@@ -28,7 +28,7 @@ export function resolveUserDataDir(): string {
 export function resolveBlogId(): string {
   const id = process.env.NAVER_BLOG_ID?.trim();
   if (!id) {
-    throw new Error('NAVER_BLOG_ID가 .env.local에 설정되지 않았습니다.');
+    throw new Error('NAVER_BLOG_ID가 .env에 설정되지 않았습니다.');
   }
   return id;
 }
@@ -46,12 +46,22 @@ export async function launchBlogBot(config: BotConfig): Promise<BotHandle> {
   };
 
   log('info', `Persistent Context 시작: ${config.userDataDir}`);
-  const context = await chromium.launchPersistentContext(config.userDataDir, {
-    headless: config.headless ?? false,
-    viewport: { width: 1280, height: 900 },
-    locale: 'ko-KR',
-    timezoneId: 'Asia/Seoul',
-  });
+  let context: BrowserContext;
+  try {
+    context = await chromium.launchPersistentContext(config.userDataDir, {
+      headless: config.headless ?? false,
+      viewport: { width: 1280, height: 900 },
+      locale: 'ko-KR',
+      timezoneId: 'Asia/Seoul',
+    });
+  } catch (err) {
+    // user-data-dir 잠금: 직전 발행 창(반자동)이 아직 열려 있으면 같은 프로필을 못 연다.
+    const m = err instanceof Error ? err.message : String(err);
+    if (/ProcessSingleton|SingletonLock|already in use|in use by another|profile/i.test(m)) {
+      throw new Error('BROWSER_ALREADY_OPEN');
+    }
+    throw err;
+  }
 
   const page = context.pages()[0] ?? (await context.newPage());
 
@@ -87,8 +97,9 @@ async function enableKeepLogin(page: Page, log: BotHandle['log']): Promise<void>
 
 /**
  * PRD §5.1 1단계: 스마트에디터 로딩 검증.
- * - 로그인 페이지 감지 시: 사용자가 직접 로그인할 수 있도록 별도 긴 대기 (기본 5분).
- * - 글쓰기 페이지 도달 후: contenteditable DOM 감지를 timeoutMs(기본 10초) 내에 완료.
+ * - 로그인 페이지 감지 시: "로그인 상태 유지"를 자동 ON 한 뒤, 사용자가 직접 로그인하도록 긴 대기(기본 5분).
+ * - 글쓰기 페이지 도달 후: 실제 편집 표면(.se-text-paragraph) 감지.
+ *   (iframe 대기 + paragraph 대기에 각각 timeoutMs를 쓰므로 최악 약 2×timeoutMs 소요)
  */
 export async function waitForEditor(
   handle: BotHandle,

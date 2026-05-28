@@ -11,6 +11,9 @@ export interface LogLine {
 export type PublishApiError =
   | 'NAVER_EDITOR_LOAD_FAILED'
   | 'PARTIAL_WRITE_SAVED_AS_DRAFT'
+  | 'PARTIAL_WRITE_BROWSER_OPEN'
+  | 'BROWSER_ALREADY_OPEN'
+  | 'LOGIN_TIMEOUT'
   | 'AI_GENERATION_FAILED'
   | 'UNKNOWN';
 

@@ -40,6 +40,10 @@ async function saveTempImages(files: File[]): Promise<{ dir: string; paths: stri
 export async function POST(req: NextRequest) {
   let tempDir: string | null = null;
   let context: Awaited<ReturnType<typeof launchBlogBot>>['context'] | null = null;
+  let handle: Awaited<ReturnType<typeof launchBlogBot>> | null = null;
+  // 에디터에 글이 들어가기 시작한 이후엔, 어떤 실패가 나도 브라우저를 닫지 않고
+  // 열어둬 작성된 글을 보존한다(§5.2). 진입 전 실패는 정리.
+  let editorReady = false;
 
   try {
     const form = await req.formData();
@@ -66,7 +70,7 @@ export async function POST(req: NextRequest) {
     const saved = await saveTempImages(files);
     tempDir = saved.dir;
 
-    const handle = await launchBlogBot({
+    handle = await launchBlogBot({
       blogId: resolveBlogId(),
       userDataDir: resolveUserDataDir(),
       headless: false,
@@ -75,6 +79,8 @@ export async function POST(req: NextRequest) {
 
     await waitForEditor(handle, 10000);
     await dismissRecoveryPopup(handle);
+    // 여기부터 본문이 들어가기 시작 → 이후 실패해도 브라우저 유지(글 보존)
+    editorReady = true;
 
     // Day 5: 제목 + 본문 텍스트 입력
     await fillTitleAndBody(handle, payload);
@@ -127,6 +133,20 @@ export async function POST(req: NextRequest) {
     const msg = err instanceof Error ? err.message : 'UNKNOWN';
     console.error('[/api/publish] error:', err);
 
+    // 본문 진입 후 실패: 작성된 글이 브라우저에 남아 있으므로 닫지 않고 사람이 직접 수습/발행.
+    if (editorReady && context) {
+      handle?.log(
+        'warn',
+        `자동화 도중 예외 — 브라우저를 열어둡니다. 크롬 창에서 내용 확인 후 직접 발행/저장하세요: ${msg}`,
+      );
+      context = null; // 닫지 않음
+      return NextResponse.json<PublishApiResponse>(
+        { ok: false, message: 'PARTIAL_WRITE_BROWSER_OPEN', logs: handle?.logs },
+        { status: 200 },
+      );
+    }
+
+    // 본문 진입 전 실패: 보존할 글 없음 → 브라우저 정리.
     if (context) {
       try {
         await context.close();
@@ -135,9 +155,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const isEditorFail = msg === 'NAVER_EDITOR_LOAD_FAILED';
     return NextResponse.json<PublishApiResponse>(
-      { ok: false, message: isEditorFail ? 'NAVER_EDITOR_LOAD_FAILED' : msg },
+      { ok: false, message: msg, logs: handle?.logs },
       { status: 500 },
     );
   } finally {

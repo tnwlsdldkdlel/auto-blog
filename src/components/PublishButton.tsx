@@ -100,13 +100,36 @@ export function PublishButton() {
 
       if (!pubRes.ok || !pubData.ok) {
         const errMsg = pubData.message ?? `publish HTTP ${pubRes.status}`;
-        if (errMsg === 'NAVER_EDITOR_LOAD_FAILED') {
-          appendLog({
-            level: 'error',
-            message: '✗ 네이버 에디터 로딩 실패 (10초 타임아웃). 로그인 상태/네트워크 확인.',
-          });
-        } else {
-          appendLog({ level: 'error', message: `✗ 발행 실패: ${errMsg}` });
+        switch (errMsg) {
+          case 'PARTIAL_WRITE_BROWSER_OPEN':
+            // 일부 단계 실패했지만 작성된 글은 크롬 창에 남아 있음 — 하드 에러로 취급하지 않음
+            appendLog({
+              level: 'warn',
+              message:
+                '⚠ 자동화 일부 단계가 실패했지만 작성된 글은 크롬 창에 남아 있습니다. 창에서 내용 확인 후 직접 발행/저장하세요.',
+            });
+            setStatus('idle');
+            return;
+          case 'BROWSER_ALREADY_OPEN':
+            appendLog({
+              level: 'error',
+              message: '✗ 이전 발행 창이 아직 열려 있습니다. 그 크롬 창을 닫고 다시 시도하세요.',
+            });
+            break;
+          case 'NAVER_EDITOR_LOAD_FAILED':
+            appendLog({
+              level: 'error',
+              message: '✗ 네이버 에디터 로딩 실패. 로그인 상태/네트워크 확인.',
+            });
+            break;
+          case 'LOGIN_TIMEOUT':
+            appendLog({
+              level: 'error',
+              message: '✗ 로그인 대기 시간 초과(5분). 다시 시도해 주세요.',
+            });
+            break;
+          default:
+            appendLog({ level: 'error', message: `✗ 발행 실패: ${errMsg}` });
         }
         setStatus('error');
         return;
