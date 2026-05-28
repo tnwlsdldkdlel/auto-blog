@@ -11,6 +11,7 @@ export function MetaForm() {
   const isPublic = useBotStore((s) => s.isPublic);
   const commentAllow = useBotStore((s) => s.commentAllow);
   const sympathyAllow = useBotStore((s) => s.sympathyAllow);
+  const autoPublish = useBotStore((s) => s.autoPublish);
   const setKeyword = useBotStore((s) => s.setKeyword);
   const setToneNote = useBotStore((s) => s.setToneNote);
   const setPlaceName = useBotStore((s) => s.setPlaceName);
@@ -19,6 +20,7 @@ export function MetaForm() {
   const setIsPublic = useBotStore((s) => s.setIsPublic);
   const setCommentAllow = useBotStore((s) => s.setCommentAllow);
   const setSympathyAllow = useBotStore((s) => s.setSympathyAllow);
+  const setAutoPublish = useBotStore((s) => s.setAutoPublish);
 
   return (
     <div className="space-y-3">
@@ -107,6 +109,19 @@ export function MetaForm() {
               공감 허용
             </label>
           </div>
+          <label className="mt-2 flex items-center gap-2 rounded border border-amber-300 bg-amber-50 px-2 py-1.5 text-sm dark:border-amber-700 dark:bg-amber-950/30">
+            <input
+              type="checkbox"
+              checked={autoPublish}
+              onChange={(e) => setAutoPublish(e.target.checked)}
+            />
+            <span>
+              ⚡ 완전 자동 발행{' '}
+              <span className="text-xs text-amber-700 dark:text-amber-400">
+                — 켜면 사람 확인 없이 바로 라이브 발행됩니다(되돌리기 어려움). 끄면 반자동(권장).
+              </span>
+            </span>
+          </label>
         </div>
       </div>
     </div>

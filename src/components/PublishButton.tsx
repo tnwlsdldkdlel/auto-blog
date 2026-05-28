@@ -14,6 +14,7 @@ interface PublishResponse {
   ok: boolean;
   message?: string;
   logs?: LogLine[];
+  publishedUrl?: string;
 }
 
 export function PublishButton() {
@@ -27,6 +28,7 @@ export function PublishButton() {
   const isPublic = useBotStore((s) => s.isPublic);
   const commentAllow = useBotStore((s) => s.commentAllow);
   const sympathyAllow = useBotStore((s) => s.sympathyAllow);
+  const autoPublish = useBotStore((s) => s.autoPublish);
   const setStatus = useBotStore((s) => s.setStatus);
   const appendLog = useBotStore((s) => s.appendLog);
   const resetLogs = useBotStore((s) => s.resetLogs);
@@ -94,6 +96,7 @@ export function PublishButton() {
 
       const pubForm = new FormData();
       pubForm.append('payload', JSON.stringify(p));
+      pubForm.append('autoPublish', String(autoPublish));
       images.forEach((img) => pubForm.append('images', img.file, img.file.name));
 
       const pubRes = await fetch('/api/publish', { method: 'POST', body: pubForm });
@@ -110,6 +113,15 @@ export function PublishButton() {
               level: 'warn',
               message:
                 '⚠ 자동화 일부 단계가 실패했지만 작성된 글은 크롬 창에 남아 있습니다. 창에서 내용 확인 후 직접 발행/저장하세요.',
+            });
+            setStatus('idle');
+            return;
+          case 'AUTO_PUBLISH_TIMEOUT':
+            // 완전 자동 모드에서 발행 신호를 못 받음 — 브라우저는 열려 있으니 사람이 직접 마무리
+            appendLog({
+              level: 'warn',
+              message:
+                '⚠ 자동 발행 신호 미감지(타임아웃) — 크롬 창에서 [발행]을 직접 눌러 마무리하세요.',
             });
             setStatus('idle');
             return;
@@ -138,11 +150,22 @@ export function PublishButton() {
         return;
       }
 
-      appendLog({
-        level: 'info',
-        message:
-          '✓ 발행 준비 완료 — 뜬 크롬 창에서 카테고리·공개범위·내용을 확인한 뒤 [발행] 버튼을 직접 눌러주세요. (끝나면 창을 닫으면 됩니다)',
-      });
+      if (pubData.message === 'PUBLISHED') {
+        const url = pubData.publishedUrl;
+        appendLog({
+          level: 'info',
+          message: url
+            ? `✅ 발행 완료 — ${url}`
+            : '✅ 발행 완료 (URL 미감지 — 블로그에서 확인하세요)',
+        });
+      } else {
+        // WAITING_FOR_MANUAL_PUBLISH (반자동 기본)
+        appendLog({
+          level: 'info',
+          message:
+            '✓ 발행 준비 완료 — 뜬 크롬 창에서 카테고리·공개범위·내용을 확인한 뒤 [발행] 버튼을 직접 눌러주세요. (끝나면 창을 닫으면 됩니다)',
+        });
+      }
       setStatus('idle');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'UNKNOWN';
@@ -162,7 +185,9 @@ export function PublishButton() {
         ? 'AI 원고 생성 중...'
         : status === 'automating'
           ? '네이버 자동화 중...'
-          : 'AI 원고 생성 + 발행창 열기'}
+          : autoPublish
+            ? '⚡ AI 원고 생성 + 완전 자동 발행'
+            : 'AI 원고 생성 + 발행창 열기'}
     </button>
   );
 }

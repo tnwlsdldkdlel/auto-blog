@@ -13,6 +13,7 @@ import {
   openPublishModal,
   setCategory,
   setPublishOptions,
+  clickFinalPublish,
   resolveUserDataDir,
   resolveBlogId,
 } from '@/lib/naver-bot';
@@ -49,6 +50,8 @@ export async function POST(req: NextRequest) {
     const form = await req.formData();
     const payloadJson = String(form.get('payload') ?? '');
     const files = form.getAll('images').filter((v): v is File => v instanceof File);
+    // autoPublish는 콘텐츠가 아닌 런타임 동작 결정이라 payload 스키마 밖에서 처리.
+    const autoPublish = String(form.get('autoPublish') ?? 'false') === 'true';
 
     if (!payloadJson) {
       return NextResponse.json<PublishApiResponse>(
@@ -114,6 +117,44 @@ export async function POST(req: NextRequest) {
       handle.log('warn', `발행 모달/카테고리 단계 예외 — 브라우저는 열어둡니다(직접 진행): ${msg}`);
     }
 
+    // 완전 자동 발행: autoPublish ON이면 최종 [발행]까지 자동으로 누른다.
+    // 발행 성공 시 URL 받아서 브라우저 정리, 실패/타임아웃 시 글 보존 모드.
+    if (autoPublish) {
+      handle.log('info', '자동 발행 모드 — 최종 [발행]까지 자동 진행');
+      const publishedUrl = await clickFinalPublish(handle);
+      if (publishedUrl) {
+        // 발행 성공 화면을 잠깐 보여주고 정리
+        await handle.page.waitForTimeout(2500);
+        await context.close();
+        context = null;
+        return NextResponse.json<
+          PublishApiResponse & { payloadTitle?: string; publishedUrl?: string }
+        >({
+          ok: true,
+          message: 'PUBLISHED',
+          payloadTitle: payload.title,
+          publishedUrl,
+          logs: handle.logs,
+        });
+      }
+      // 발행 신호 미감지 — 브라우저 열어둬 사람이 직접 확인/발행
+      handle.log(
+        'warn',
+        '자동 발행 신호 미감지 — 브라우저를 열어둡니다. 크롬 창에서 직접 [발행]을 눌러주세요.',
+      );
+      context = null;
+      return NextResponse.json<PublishApiResponse & { payloadTitle?: string }>(
+        {
+          ok: false,
+          message: 'AUTO_PUBLISH_TIMEOUT',
+          payloadTitle: payload.title,
+          logs: handle.logs,
+        },
+        { status: 200 },
+      );
+    }
+
+    // 반자동 (기본): 발행 모달까지만 자동, 최종 [발행]은 사람.
     handle.log(
       'info',
       '✓ 반자동 준비 완료 — 크롬 창에서 카테고리·공개범위·내용을 확인한 뒤 [발행] 버튼을 직접 눌러 발행하세요. 끝나면 창을 닫으면 됩니다.',

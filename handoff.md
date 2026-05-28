@@ -7,7 +7,7 @@
 
 ## 한 줄 요약
 
-**Phase 1 MVP 완료 → Phase 2 완료 — 발행 모달 반자동(카테고리 + 공개범위/댓글/공감 자동 적용, 최종 [발행]은 사람). 세션 영구저장·장소 첨부(본문 se-placesMap 삽입까지 DOM 검증)·waitForEditor 안정화 모두 완료(2026-05-28). 남은 건 완전 자동 발행 토글, SSE 로그, Phase 3(경쟁사 크롤링).**
+**Phase 1 MVP 완료 → Phase 2 완료 + 완전 자동 발행 토글 구현(코드 완료, 라이브 미검증) — 기본은 반자동(사람이 최종 [발행]), 토글 ON 시 `seOnePublishBtn` data-testid로 자동 발행까지. Prettier 도입+베이스라인 적용. 남은 건 autoPublish 라이브 1회 검증, SSE 로그, Phase 3.**
 
 ---
 
@@ -32,6 +32,8 @@
 | §5.1 1단계 실패 처리(에디터 미감지)                                                  | ✅                                                     |
 | §5.2 글 보존 — **본문 진입(`editorReady`) 후** 어떤 실패든 브라우저 안 닫고 글 유지  | ✅ catch 분기로 강화 (2026-05-28)                      |
 | 브라우저 잔존 충돌 처리 — 이전 발행 창 열린 채 재시도 시 `BROWSER_ALREADY_OPEN` 안내 | ✅ (2026-05-28, 코드리뷰 후속)                         |
+| **완전 자동 발행 토글** — UI 토글 + `clickFinalPublish()`(seOnePublishBtn) + PUBLISHED/AUTO_PUBLISH_TIMEOUT 응답 | ⏳ 코드 완성·tsc/lint/format 통과, **라이브 발행 검증 미완** (실제 1편 발행 필요) |
+| Prettier 설정 + 베이스라인 적용                                                      | ✅ (2026-05-28) — `npm run format` / `format:check`    |
 
 ---
 
@@ -43,7 +45,7 @@
 | ~~공개범위/댓글/공감 자동화~~       | ✅ 완료 (2026-05-27) | `setPublishOptions` 추가. 토글은 `for`→input `.checked` 읽어 mismatch만 클릭                                                                                                                                          |
 | ~~세션 영구 저장 안 됨~~            | ✅ 완료 (2026-05-27) | `enableKeepLogin()` — 로그인 전 `#keep` 자동 ON. 영구 쿠키 발급돼 재로그인 불필요                                                                                                                                     |
 | ~~장소 첨부 — 추가 버튼 미감지~~    | ✅ 완료 (2026-05-28) | 셀렉터 버그였음(입력 문제 아님). `.se-place-add-button`이 행 hover 시에만 노출 → hover 후 클릭. 본문 `se-placesMap` 삽입까지 DOM 검증 완료                                                                            |
-| **즉시 발행 토글(완전 자동 발행)**  | ❌ (다음 후보)       | 현재는 반자동(사람이 최종 발행). 완전 자동 원하면 발행 모달 안 최종 [발행] 버튼 셀렉터 codegen 필요                                                                                                                   |
+| ~~즉시 발행 토글(완전 자동 발행)~~  | ⏳ 코드 완료(2026-05-28), 라이브 미검증 | `clickFinalPublish` + UI 토글 구현. 셀렉터는 `[data-testid="seOnePublishBtn"]`(네이버 stable test id). **다음 후보: 실제 1편으로 자동 발행 동작 확인** (OpenAI 비용 + 라이브 글) |
 | **SSE 실시간 로그**                 | ❌                   | 현재 fetch 종료 시 한꺼번에 로그 받음. 로그인 대기 중 UX 답답함 해결용                                                                                                                                                |
 | **경쟁사 크롤링 4-Stage (Phase 3)** | ❌                   | PRD §3.4 SEO Fact Extraction. RefinedStoreInfo + Fact Extractor + 본문 큐레이션                                                                                                                                       |
 | **코드리뷰 잔여(우선순위 낮음)**    | ❌                   | ①매직넘버 타임아웃 상수화 ②scripts↔naver-bot 셀렉터 중복 제거(공유 모듈) ③attachPlace/setPublishOptions inline 타입을 BlogPayload 참조로 ④attachImages 업로드 대기를 시간→신호 기반으로 ⑤`saveAsDraft` dead code 처리 |
@@ -71,6 +73,11 @@ node scripts/verify-options.mjs         # setPublishOptions 라이브 검증 + �
 node scripts/inspect-login.mjs          # 로그인 페이지 keep 컨트롤 진단(probe)
 node scripts/verify-session.mjs         # 세션 영구저장 검증(1차 로그인→2차 재실행 판정)
 node scripts/verify-place.mjs "스타벅스 강남R점"  # 장소 첨부 라이브 검증 + DOM 진단
+node scripts/inspect-final-publish.mjs  # 모달 안 최종 [발행] 버튼 구조 진단(probe, 발행 안 함)
+
+# 포맷
+npm run format        # 전체 정리(쓰기)
+npm run format:check  # 차이만 확인(쓰기 X)
 ```
 
 `.env`(주의: `.env.local` 아님)에 `OPENAI_API_KEY` + `NAVER_BLOG_ID` + `PLAYWRIGHT_USER_DATA_DIR` 채워 있어야 함. `.playwright-user-data/`에 세션 캐시됨 — **"로그인 상태 유지" 자동 ON 처리로 첫 로그인 후 영구 유지**(재로그인 불필요).
@@ -98,7 +105,7 @@ node scripts/verify-place.mjs "스타벅스 강남R점"  # 장소 첨부 라이�
 | **카테고리 항목**                            | iframe 내부 `getByRole('button', { name: '<카테고리명>' })` ✅ (substring 매칭)                                                                                                            |
 | **공개범위(라디오)**                         | iframe 내부 `getByText('전체공개')` / `getByText('비공개')` ✅ (label for=`open_public`/`open_private`)                                                                                    |
 | **댓글허용/공감허용(토글)**                  | iframe 내부 `getByText('댓글허용')` / `getByText('공감허용')` ✅ (label for=`publish-option-comment`/`publish-option-sympathy`. 상태는 for→input `.checked`로 읽음)                        |
-| 최종 발행 버튼 (미검증)                      | 발행 모달 안 별도 `'발행'` 버튼 추정 — 완전 자동화 시 codegen 필요                                                                                                                         |
+| **최종 발행 버튼** (모달 안)                 | iframe 내부 `[data-testid="seOnePublishBtn"]` ✅ (네이버가 직접 부여한 stable test id. CSS-modules 해시는 빌드마다 바뀌므로 의존 금지) |
 | **로그인 상태 유지** (로그인 페이지, 최상위) | `#keep[role="checkbox"]` (div, `aria-checked`). 기본 OFF → 로그인 전 자동 클릭 ✅                                                                                                          |
 
 > ⚠️ 네이버는 종종 마이너 UI 변경. 깨지면 `npx playwright codegen --viewport-size=1280,900 "https://blog.naver.com/<ID>?Redirect=Write"` 로 재캡처.
@@ -130,6 +137,9 @@ node scripts/verify-place.mjs "스타벅스 강남R점"  # 장소 첨부 라이�
 ## 📋 git 히스토리 (이 세션)
 
 ```
+feat: 완전 자동 발행 토글 - clickFinalPublish(seOnePublishBtn) + UI 토글
+style: Prettier 전체 적용 - 코드/문서/스크립트 일괄 포맷
+chore: Prettier 도입 - format 스크립트 + 설정
 refactor: 코드리뷰 후속 - 글 보존 분기 + 브라우저 잠금 에러 매핑 + quick win
 fix: 에디터 로딩 감지 안정화(.se-text-paragraph) + 장소 본문삽입 DOM 검증
 fix: 장소 첨부 - 검색결과 행 hover 후 추가 버튼 클릭(셀렉터 버그 수정)
@@ -152,7 +162,7 @@ Initial commit from Create Next App
 
 우선순위 순:
 
-1. **즉시 발행 토글(완전 자동)** — 발행 모달 내 최종 [발행] 버튼 codegen 후 옵션화. 켜면 사람 개입 없이 발행까지
+1. **autoPublish 라이브 1회 검증** — `완전 자동 발행` 토글 ON으로 사진+키워드 → AI → 자동 발행까지 통째로 1편 발행해 동작 확인 (OpenAI 비용 + 라이브 글)
 2. **SSE 실시간 로그** — 로그인 대기 UX (단, 세션 유지로 재로그인 사라져 체감 우선순위↓)
 3. **Phase 3 — 경쟁사 크롤링 4-Stage** (PRD §3.4) — 진짜 SEO 엔진화
 4. (선택) 실제 발행 1회 — 사진+실제 식당명으로 통합 발행 한 번 더 돌려 최종 눈 확인 (OpenAI 비용)

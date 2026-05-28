@@ -19,6 +19,7 @@ interface StoreState {
   isPublic: PublicScope;
   commentAllow: boolean;
   sympathyAllow: boolean;
+  autoPublish: boolean;
   status: BotStatus;
   logs: LogLine[];
   addImages: (files: File[]) => void;
@@ -32,6 +33,7 @@ interface StoreState {
   setIsPublic: (v: PublicScope) => void;
   setCommentAllow: (v: boolean) => void;
   setSympathyAllow: (v: boolean) => void;
+  setAutoPublish: (v: boolean) => void;
   setStatus: (s: BotStatus) => void;
   appendLog: (line: Omit<LogLine, 'ts'>) => void;
   resetLogs: () => void;
@@ -47,6 +49,7 @@ export const useBotStore = create<StoreState>((set) => ({
   isPublic: 'all',
   commentAllow: true,
   sympathyAllow: true,
+  autoPublish: false, // 기본 OFF — 반자동(사람이 최종 [발행] 클릭)이 안전 기본값
   status: 'idle',
   logs: [],
   addImages: (files) =>
@@ -79,6 +82,7 @@ export const useBotStore = create<StoreState>((set) => ({
   setIsPublic: (v) => set({ isPublic: v }),
   setCommentAllow: (v) => set({ commentAllow: v }),
   setSympathyAllow: (v) => set({ sympathyAllow: v }),
+  setAutoPublish: (v) => set({ autoPublish: v }),
   setStatus: (s) => set({ status: s }),
   appendLog: (line) =>
     set((state) => ({

@@ -551,6 +551,63 @@ async function setToggle(handle: BotHandle, label: string, desired: boolean): Pr
 }
 
 /**
+ * 발행 모달 안의 **최종 [발행] 버튼**을 눌러 실제로 발행한다.
+ * 실측(2026-05): `button[data-testid="seOnePublishBtn"]` — 네이버가 직접 부여한 안정 test id.
+ * (CSS-modules 해시 클래스는 빌드마다 바뀌므로 의존 금지)
+ *
+ * 발행 후 글쓰기 폼 URL에서 벗어나는 것을 성공 신호로 본다.
+ * 성공: 발행된 글의 URL을 반환. 실패/타임아웃: null 반환 (호출 측에서 글 보존 모드로 처리).
+ *
+ * **선행 조건**: openPublishModal + setCategory + setPublishOptions 까지 완료된 상태.
+ */
+export async function clickFinalPublish(
+  handle: BotHandle,
+  timeoutMs = 30_000,
+): Promise<string | null> {
+  const { page, log } = handle;
+  const frame = page.frameLocator('iframe[name="mainFrame"]');
+
+  const btn = frame.locator('[data-testid="seOnePublishBtn"]').first();
+  try {
+    await btn.waitFor({ timeout: 5000 });
+  } catch {
+    log('warn', '최종 [발행] 버튼([data-testid=seOnePublishBtn]) 미감지 — 자동 발행 보류');
+    return null;
+  }
+
+  log('info', '최종 [발행] 버튼 클릭 — 실제 발행 시도');
+  await btn.click();
+  await page.waitForTimeout(500);
+
+  // 발행 확인 다이얼로그가 떴다면 확인 클릭 (보통 카테고리 미선택 경고 등)
+  try {
+    const confirmBtn = frame.getByRole('button', { name: '확인', exact: true }).first();
+    await confirmBtn.waitFor({ timeout: 1500 });
+    await confirmBtn.click();
+    log('info', '발행 확인 다이얼로그 확인');
+  } catch {
+    // 확인 다이얼로그 없음 — 정상
+  }
+
+  // 발행 완료 신호: 글쓰기 폼 URL에서 벗어남 (PostView 등으로 리다이렉트).
+  try {
+    await page.waitForURL(
+      (u) => {
+        const s = u.toString();
+        return !s.includes('PostWriteForm') && !s.includes('Redirect=Write');
+      },
+      { timeout: timeoutMs },
+    );
+    const url = page.url();
+    log('info', `✓ 발행 완료 — ${url}`);
+    return url;
+  } catch {
+    log('warn', '발행 완료 신호 미감지(타임아웃) — 모달이 남아있거나 추가 확인 필요');
+    return null;
+  }
+}
+
+/**
  * 임시저장 클릭.
  * codegen 확인: 저장 버튼은 iframe 내부의 getByRole('button', { name: '저장', exact: true }).
  */
